@@ -1,2 +1,3 @@
 # Sound-Level-Meter
-Sound pressure level meter and reverberation time for embedded systems.
+Este projeto é fruto de um trabalho de conclusão de curso de graduação em Engenharia Acústica - UFSM.
+
