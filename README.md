@@ -8,6 +8,11 @@ Além do *software*, o projeto conta com um conjunto de *hardware* que contempla
 ## Uso
 O projeto foi especialmente otimizado pala ser compilado em sistemas embarcados com capacidade reduzida de processamento, porém deve funcionar perfeitamente em computadores convencionais como *desktops* e *notebook*, desde que estes possuam placa de áudio, microfone e visor. Neste caso, recomendo utilizar o Anaconda, distribuição gratuita e de código aberto da linguagem de programação Python.
 
+### Configurando
+Para usar os *software* basta baixar os arquivos, instalar as dependências e fazer os seguintes ajustes:
+- *default.py* --> Neste arquivo você deve encontrar o(s) dispositivo(s) de aúdio conectados ao sistema embarcado ou computador e configurá-lo na variável *device*. Do mesmo modo, deve colocar o número dos canais de entrada e saída nas variáveis *inputChannels* e *outChannels*. Por fim, configure corretamente a taxa de amostragem na variável *samplingRate*. Após terminar as configurações, salve o arquivo.
+- *startMNPS.py* -->Execute este arquivo para rodar o *software*.
+
 ## Os sistema embarcados testados foram:
 * [Tinker Board S][TinkerB] - Com o sistema operacional Tinker [Board Debian Stretch-V2.1.11][TinkerOS]
 * [Raspberry Pi 4 B (4gb)][Rpi4] - Com o sistema operacional [Raspbian Buster versão 2020-02-13][Raspbian]
