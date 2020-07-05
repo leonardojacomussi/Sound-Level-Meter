@@ -1,7 +1,7 @@
 # Sound-Level-Meter: Sonômetro programado em Python para sistemas embarcados (SBC - Single Board Computer)
 Este projeto é fruto do trabalho de conclusão de curso que desenvolvi durante a graduação do curso de [Engenharia Acústica][EAC], pela Universidade Federal de Santa Maria ([UFSM][ufsmsite]). 
 
-Nste repositório contém os *software* implementados em Python 3 com as ferramentas típicas de um sonômetro (ou medidor de nível de pressão sonora - MNPS), desde a análise espectral do NPS em banda larga a medição de resposta impulvia para o cálculo do tempo de reverberação de uma sala, contendo além do processamento digital de sinais de áudio (*back-end*), um completo conjunto de interfaces gráficas que facilitam a configuração e acesso aos dados medidos.
+Neste repositório contém os *software* implementados em Python 3 com as ferramentas típicas de um sonômetro (ou Medidor de Nível de Pressão Sonora - MNPS), desde a análise do NPS em banda larga a medição de resposta impulsiva para o cálculo do tempo de reverberação de uma sala, contendo além do processamento digital de sinais de áudio (*back-end*), um completo conjunto de interfaces gráficas que facilitam a configuração e acesso aos dados medidos.
 
 Além do *software*, o projeto conta com um conjunto de *hardware* que contempla toda a cadeia de sinais de um MNPS, como microfone de eletreto, conversor analógico-digital (placa de áudio), unidade de processamento (sistema embarcado) e visor (*display touch screen*).
 
