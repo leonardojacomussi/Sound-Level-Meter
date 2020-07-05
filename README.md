@@ -68,7 +68,7 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
   - [ResearchGate][ResearchGate_Will]
 
 # Referências
-(Citar artigo Internoise 2020, ResearchGate e Llinkedin.)
+(Citar artigo Internoise 2020.)
 
 
 [EAC]: <https://www.eac.ufsm.br/>
