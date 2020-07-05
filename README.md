@@ -40,6 +40,12 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
 |     Cabos USB                   |     USB-A para USB-A e USB-A para micro USB    |              x         |          x      |          x         |
 
 
+# Versões
+- Branch: **Master** --> versão completa do *software* contendo níveis de pressão sonora em banda larga em tempo real e método de cálculo do tempo de reverberação.
+
+- Branch: **Simple-version** --> versão simples do *software* contendo apenas níveis de pressão sonora em tempo real, no entando, ao optar em salvar a medição, é feito a filtragem do sinal medido em bandas de 1/3 de oitava.
+
+
 # Dependências
 - Python 3.7
 - PyQt5
@@ -54,11 +60,6 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
 
 # Referências
 Citar artigo Internoise 2020, ResearchGate e Llinkedin.
-
-# Versões
-- Branch: **Master** --> versão completa do *software* contendo níveis de pressão sonora em banda larga em tempo real e método de cálculo do tempo de reverberação.
-
-- Branch: **Simple-version** --> versão simples do *software* contendo apenas níveis de pressão sonora em tempo real, no entando, ao optar em salvar a medição, é feito a filtragem do sinal medido em bandas de 1/3 de oitava.
 
 
 [EAC]: <https://www.eac.ufsm.br/>
