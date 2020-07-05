@@ -3,28 +3,23 @@
 # %% Configurações do Medidor
 '''
 ############################################################
-device[in, out]
+device: dispositivo de entrada de áudio
 
-        in -> dispositivo de entrada de áudio
-        out -> dispositivo de saída de áudio
-        
 Para verificar os dispositivos de áudio conectados execute:
     
 import pytta
 pytta.list_devices()
 ############################################################
 '''
-device = [1, 3]
+device = [1]
 # device = [4]
 
 # Canal de entrada (apenas 1 (um) canal de gravação)
 inputChannels = [1]
 
-# Canais de saída
-outChannels = [1,2]
-
 # Taxa de amostragem: [Hz]
 samplingRate = 44100
+
 
 #%% Constantantes padrão
 
