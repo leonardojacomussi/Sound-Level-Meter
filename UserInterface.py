@@ -340,23 +340,23 @@ class guiMNPS(object):
         self.lcdLevel_global.setText(_translate("winMNPS", "00,00"))
         self.lblMinLevel_2.setText(_translate("winMNPS", " dB"))
         self.lblDurationinfo.setText(_translate("winMNPS", "Min:Sec"))
-        self.lblLImax.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"Max,I</span></p></body></html>"))
+        self.lblLImax.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"max,I</span></p></body></html>"))
         self.lcdLImax.setText(_translate("winMNPS", "--,--"))
         self.lblTemplateInfo.setText(_translate("winMNPS", "<html><head/><body><p align=\"center\">"+template+"</p></body></html>"))
         self.lblUnits_2.setText(_translate("winMNPS", "dB"))
-        self.lblLImin.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"Min,I</span></p></body></html>"))
+        self.lblLImin.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"min,I</span></p></body></html>"))
         self.lblProjectinfo.setText(_translate("winMNPS", "<html><head/><body><p align=\"center\">Nome do projeto - Ensaio 00</p></body></html>"))
         self.lcdLFmin.setText(_translate("winMNPS", "--,--"))
         self.lcdLFmax.setText(_translate("winMNPS", "--,--"))
-        self.lblLFmax.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"Max,F</span></p></body></html>"))
+        self.lblLFmax.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"max,F</span></p></body></html>"))
         self.lblMaxLevel_3.setText(_translate("winMNPS", " dB"))
-        self.lblLFmin.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"Min,F</span></p></body></html>"))
+        self.lblLFmin.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"min,F</span></p></body></html>"))
         self.lblMinLevel_3.setText(_translate("winMNPS", " dB"))
         self.lcdLSmin.setText(_translate("winMNPS", "--,--"))
         self.lcdLSmax.setText(_translate("winMNPS", "--,--"))
-        self.lblLSmax.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"Max,S</span></p></body></html>"))
+        self.lblLSmax.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"max,S</span></p></body></html>"))
         self.lblMaxLevel_4.setText(_translate("winMNPS", " dB"))
-        self.lblLSmin.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"Min,S</span></p></body></html>"))
+        self.lblLSmin.setText(_translate("winMNPS", "<html><head/><body><p><span style=\" font-size:14pt;\">L</span><span style=\" font-size:14pt; vertical-align:sub;\">"+Freqweighting+"min,S</span></p></body></html>"))
         self.lblMinLevel_4.setText(_translate("winMNPS", " dB"))
 
 
@@ -671,7 +671,7 @@ class guiCalib(object):
         self.btnAccept.setText(_translate("gui_Calib", "Accept"))
         self.btnCancel.setText(_translate("gui_Calib", "Cancel"))
         self.lblDnTime.setText(_translate("gui_Calib", "<html><head/><body><p align=\"center\">Performing calibration...</p><p align=\"center\">Please wait --:--</p></body></html>"))
-        self.lblStrSens.setText(_translate("gui_Calib", "Sensibilidade"))
+        self.lblStrSens.setText(_translate("gui_Calib", "Sensitivity"))
         self.lblSens.setText(_translate("gui_Calib", "--,-- mV/Pa"))
         self.lblCorr.setText(_translate("gui_Calib", "--,-- dB"))
         self.lblStrCorr.setText(_translate("gui_Calib", "Correction"))
@@ -1456,12 +1456,8 @@ class guiAbout(object):
         gui_About.setWindowTitle(_translate("gui_About", "About the project"))
         self.label.setToolTip(_translate("gui_About", "<html><head/><body><p><br/></p></body></html>"))
         self.label.setWhatsThis(_translate("gui_About", "<html><head/><body><p><br/></p></body></html>"))
-        # self.label.setText(_translate("gui_About", "           Sonômetro de baixo-custo"))
         self.label.setText(_translate("gui_About", "           Low-cost Sound Level Meter"))
         self.btnOk.setText(_translate("gui_About", "Ok"))
-#         self.label_2.setText(_translate("gui_About", "Trabalho de conclusão de curso de graduação em Engenharia Acústica (UFSM), realizado pelo aluno Leonardo Jacomussi Pereira de Araujo. \n"
-# "\n"
-# "Nota: versão completa do software."))
         self.label_2.setText(_translate("gui_About", "Software-hardware developed by Leonardo Jacomussi, as part of the Final Project of the Acoustical Engineering undergraduate course at the Federal University of Santa Maria (UFSM). Supervised by prof. William D'Andrea Fonseca. \n"
 "\n"
 "Note: full version of the software.\n"
@@ -1850,12 +1846,12 @@ class guiSetup(object):
 
 
 class guiSave(object):
-    def setupUi(self, gui_Save):
-        gui_Save.setObjectName("gui_Save")
-        gui_Save.resize(364, 160)
-        gui_Save.setStyleSheet("background-color: rgb(58, 58, 58);")
-        self.lbl_yesorno = QtWidgets.QLabel(gui_Save)
-        self.lbl_yesorno.setGeometry(QtCore.QRect(60, 20, 261, 41))
+    def setupUi(self, SaveAll):
+        SaveAll.setObjectName("SaveAll")
+        SaveAll.resize(364, 160)
+        SaveAll.setStyleSheet("background-color: rgb(58, 58, 58);")
+        self.lbl_yesorno = QtWidgets.QLabel(SaveAll)
+        self.lbl_yesorno.setGeometry(QtCore.QRect(30, 20, 301, 41))
         font = QtGui.QFont()
         font.setPointSize(11)
         font.setBold(True)
@@ -1863,14 +1859,14 @@ class guiSave(object):
         self.lbl_yesorno.setFont(font)
         self.lbl_yesorno.setStyleSheet("color: rgb(255, 255, 255);")
         self.lbl_yesorno.setObjectName("lbl_yesorno")
-        self.btnSaveAll = QtWidgets.QPushButton(gui_Save)
+        self.btnSaveAll = QtWidgets.QPushButton(SaveAll)
         self.btnSaveAll.setGeometry(QtCore.QRect(50, 100, 110, 40))
         font = QtGui.QFont()
         font.setPointSize(14)
         self.btnSaveAll.setFont(font)
         self.btnSaveAll.setStyleSheet("background-color: none;")
         self.btnSaveAll.setObjectName("btnSaveAll")
-        self.btnNoSaveAll = QtWidgets.QPushButton(gui_Save)
+        self.btnNoSaveAll = QtWidgets.QPushButton(SaveAll)
         self.btnNoSaveAll.setGeometry(QtCore.QRect(220, 100, 110, 40))
         font = QtGui.QFont()
         font.setPointSize(14)
@@ -1878,14 +1874,14 @@ class guiSave(object):
         self.btnNoSaveAll.setStyleSheet("background-color: none;")
         self.btnNoSaveAll.setObjectName("btnNoSaveAll")
 
-        self.retranslateUi(gui_Save)
-        QtCore.QMetaObject.connectSlotsByName(gui_Save)
+        self.retranslateUi(SaveAll)
+        QtCore.QMetaObject.connectSlotsByName(SaveAll)
 
-    def retranslateUi(self, gui_Save):
+    def retranslateUi(self, SaveAll):
         _translate = QtCore.QCoreApplication.translate
-        gui_Save.setWindowTitle(_translate("gui_Save", "Save"))
-        self.lbl_yesorno.setText(_translate("gui_Save", "Do you want to save reference signals\n"
-"         (Measurement and Calibration)?"))
-        self.btnSaveAll.setText(_translate("gui_Save", "Yes"))
-        self.btnNoSaveAll.setText(_translate("gui_Save", "No"))
+        SaveAll.setWindowTitle(_translate("SaveAll", "Save"))
+        self.lbl_yesorno.setText(_translate("SaveAll", "Do you want to save reference signals\n"
+"         (Measurement and calibration)?"))
+        self.btnSaveAll.setText(_translate("SaveAll", "Yes"))
+        self.btnNoSaveAll.setText(_translate("SaveAll", "No"))
 
