@@ -59,7 +59,15 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
 - XlsxWriter
 
 # Referências
-Citar artigo Internoise 2020, ResearchGate e Llinkedin.
+- Autor: Leonardo Jacomussi
+[LinkedIn][LinkedIn_Leo]
+[ResearchGate][ResearchGate_Leo]
+
+- Orientador: William D'Andrea Fonseca
+[LinkedIn][LinkedIn_Will]
+[ResearchGate][ResearchGate_Will]
+
+(Citar artigo Internoise 2020, ResearchGate e Llinkedin.)
 
 
 [EAC]: <https://www.eac.ufsm.br/>
@@ -69,3 +77,7 @@ Citar artigo Internoise 2020, ResearchGate e Llinkedin.
 [Rpi4]: <https://www.raspberrypi.org/products/raspberry-pi-4-model-b/>
 [Rpi3]: <https://www.raspberrypi.org/products/raspberry-pi-3-model-b-plus/>
 [Raspbian]: <https://www.raspberrypi.org/downloads/raspberry-pi-os/>
+[LinkedIn_Leo]: <https://www.linkedin.com/in/leonardo-jacomussi-6549671a2>
+[ResearchGate_Leo]: <https://www.researchgate.net/profile/Leonardo_Jacomussi_Pereira_De_Araujo>
+[LinkedIn_Will]: <https://www.linkedin.com/in/william-fonseca>
+[ResearchGate_Will]: <https://www.researchgate.net/profile/William_Fonseca3>
