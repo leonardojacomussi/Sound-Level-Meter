@@ -591,7 +591,9 @@ class pyaudioStream(object):
         elif self.template == 'calibration':
             self.freqSignal, self.freqVector = getSpectrum(self.correctedData[0,:],\
                                                     samplingRate=self.samplingRate)
-            self.Sensitivity = abs(self.freqSignal).max()
+            a = where(self.freqVector >= 900)[0][0]   # 900 Hz
+            b = where(self.freqVector <= 1100)[0][-1] # 1000 Hz
+            self.Sensitivity = abs(self.freqSignal[a:b]).max()
             self.FC = 1/self.Sensitivity
             self.Level = 20*log10(abs(self.freqSignal)*self.FC/20e-06)
             self.idMax = where(self.Level == self.Level.max())[0][0]
