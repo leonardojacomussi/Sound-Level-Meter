@@ -11,10 +11,10 @@ from scipy.integrate import cumtrapz #scipy.integrate.cumtrapz
 from scipy.stats import linregress #scipy.stats.linregress
 from acoustics.signal import OctaveBand
 from pytta import generate, SignalObj
+import default
 
 # %% IEC 61672-1:2013
-
-REFERENCE_PRESSURE = 2e-5
+REFERENCE_PRESSURE = default.refPressure
 
 FAST = 0.125
 """FAST time-constant.
@@ -235,7 +235,7 @@ def RT(signal, snr, samplingRate, fstart,  fstop, ffraction):
     for tr in range(init.size):
         for band in range(fc.nominal.size):
             # Conferindo SNR
-            if snr[band] > (abs(end[tr])+10):
+            if snr[band] > 10:
                 # Filtrando sinal
                 # sinal_abs = abs(sinal_filtrado[0].timeSignal[:,band])/max(abs(ht.timeSignal))
                 sinal_abs = abs(sinal_filtrado[0].timeSignal[:,band])

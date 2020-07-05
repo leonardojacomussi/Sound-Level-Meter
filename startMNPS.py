@@ -14,6 +14,7 @@ from pyaudioStream import pyaudioStream, getBandLevel
 from scipy.io import loadmat, savemat
 from numpy import round as rd
 from datetime import datetime
+import pyqtgraph
 import default
 import sys
 
@@ -21,6 +22,7 @@ import sys
 class MNPS(QtWidgets.QMainWindow, guiMNPS):
     def __init__(self, parent=None):
         os.chdir(path_main)
+        pyqtgraph.setConfigOption('background', 'k')
         super(MNPS, self).__init__(parent)
         self.setupUi(self)
         
@@ -36,12 +38,11 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
         self.qTimer.setInterval(int(self.cacheSetup['inTimeweighting'][0][0]*1000))
         self.qTimer.timeout.connect(self.standby)
         self.qTimer.start()
+        self.now = datetime.now()
+        self.lblDateinfo.setText(self.now.strftime("%d/%m/%Y - %H:%M:%S"))
         self._translate = QtCore.QCoreApplication.translate
-        self.retranslateUi(self, self.cacheSetup['inFreqweighting'][0], self.inTimeweighting)
         self.btnQuit.setEnabled(True)
         self.btnQuit.setIcon(QtGui.QIcon("icon/power.png"))
-        self.btnSetup.setEnabled(True)
-        self.btnSetup.setIcon(QtGui.QIcon("icon/Setup.png"))
         self.btnPlay.setIcon(QtGui.QIcon("icon/Play.png"))
         self.btnSave.setEnabled(False)
         self.btnSave.setIcon(QtGui.QIcon("icon/Save_noclick.png"))
@@ -53,47 +54,104 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
         self.btnStop.clicked.connect(self.btnStop_Action)
         self.btnDelete.clicked.connect(self.btnDelete_Action)
         self.btnSetup.clicked.connect(self.btnSetup_Action)
+        self.btnCalibrate.clicked.connect(self.btnCalibre_Action)
+        self.btnInfo.clicked.connect(self.btnInfo_Action)
+        self.btnNewproject.clicked.connect(self.btnNewproject_Action)
         self.btnSave.clicked.connect(self.btnSave_Action)
         self.btnQuit.clicked.connect(self.btnQuit_Action)
         
         #  Informações da stream
         self.samplingRate = default.samplingRate
-        self.duration = self.cacheSetup['durationMeasure'][0][0]
-        self.lblProjectinfo.setText(self._translate("winMNPS",
-                                                    "<html><head/><body><p align=\"center\">"
-                                                    + self.projectInfos['name'][0] + " - Measurement "
-                                                    + str(self.projectInfos['numMed'][0][0]) + "</p></body></html>"))
+        if self.cacheSetup['template'][0] == 'frequencyAnalyser':
+            self.duration = self.cacheSetup['durationMeasure'][0][0]
+            self.template = 'Frequency Analysis'
+        else:
+            self.duration = self.cacheSetup['durationSignal'][0][0]
+            self.template = 'Reverberation Time'
         self.display = pyaudioStream(device       = default.device,
                                     samplingRate  = self.samplingRate,
                                     duration      = self.duration,
                                     inputChannels = default.inputChannels,
                                     timeConstant  = self.cacheSetup['inTimeweighting'][0][0],
+                                    fstart        = self.cacheSetup['freqMin'][0][0],
+                                    fstop         = self.cacheSetup['freqMax'][0][0],
+                                    ffraction     = self.cacheSetup['fraction'][0][0],
                                     Freqweighting = self.cacheSetup['inFreqweighting'][0],
                                     template      = 'stand-by')
         self.display.streamStart()
-        self.durationInfo = self.cacheSetup['durationMeasure'][0][0]
+        
+        if self.cacheSetup['template'][0] == 'frequencyAnalyser':
+            self.durationInfo = self.cacheSetup['durationMeasure'][0][0]
+        else:
+            self.durationInfo = self.cacheSetup['durationSignal'][0][0] +\
+                                self.cacheSetup['startMargin'][0][0] +\
+                                self.cacheSetup['stopMargin'][0][0] +\
+                                self.display.timeSNR
         self.mins, self.secs = divmod(int(self.durationInfo), 60)
         self.timeformat = '{:02d}:{:02d}'.format(self.mins, self.secs)
+        self.retranslateUi(self, self.cacheSetup['inFreqweighting'][0], self.template, self.inTimeweighting)
         self.lblDurationinfo.setText(self._translate("winMNPS", self.timeformat))
+        self.lblProjectinfo.setText(self._translate("winMNPS",
+                                                    "<html><head/><body><p align=\"center\">"
+                                                    + self.projectInfos['name'][0] + " - Measurement "
+                                                    + str(self.projectInfos['numMed'][0][0]) + "</p></body></html>"))
+        
+        self.graphicOctave.plotItem.showGrid(False, True, 0.7)
+        self.graphicOctave.plotItem.setLogMode(x=False, y=False)
+        self.graphicOctave.setYRange(0,120)
+        self.graphicOctave.setLabel('left', "SPL [dB]")
+        self.graphicOctave.setLabel('bottom', "Frequency [Hz]")
+        self.ax = self.graphicOctave.getAxis('bottom') #This is the trick  
+        self.ax.setTicks([self.display.strFreq])
+        # self.ax.label.rotate(-90)
+        # print(self.display.strFreq)
             
     def standby(self):
-        if not self.display.globalLevel is None:
+        self.now = datetime.now()
+        self.lblDateinfo.setText(self.now.strftime("%d/%m/%Y - %H:%M:%S"))
+        if not self.display.Level is None:
             self.lcdLevel_global.setText(str(round(self.display.globalLevel, 2)).replace(".",","))
+            self.graphicOctave.clear()
+            self.bg = pyqtgraph.BarGraphItem(x=self.display.eixoX,height=self.display.Level,width=0.6,brush='c')
+            self.graphicOctave.addItem(self.bg)
             if self.display.key == False:
                 self.qTimer.stop()
     
     def Record(self):
         # self.inicio=time.time()
-        if not self.display.globalLevel is None:
+        self.now = datetime.now()
+        self.lblDateinfo.setText(self.now.strftime("%d/%m/%Y - %H:%M:%S"))
+        if not self.display.Level is None:
             if self.display.ResultKey:
                 self.lblDurationinfo.setText(self._translate("winMNPS", "00:00"))
-                self.lcdLevel_global.setText(str(round(self.display.globalLevel, 2)).replace(".",","))
-                self.lcdLSmax.setText(str(round(self.display.slowLevel[1].max(), 2)).replace(".",","))
-                self.lcdLSmin.setText(str(round(self.display.slowLevel[1].min(), 2)).replace(".",","))
-                self.lcdLFmax.setText(str(round(self.display.fastLevel[1].max(), 2)).replace(".",","))
-                self.lcdLFmin.setText(str(round(self.display.fastLevel[1].min(), 2)).replace(".",","))
-                self.lcdLImax.setText(str(round(self.display.impulseLevel[1].max(), 2)).replace(".",","))
-                self.lcdLImin.setText(str(round(self.display.impulseLevel[1].min(), 2)).replace(".",","))
+                if self.display.template == 'frequencyAnalyser':
+                    self.graphicOctave.clear()
+                    self.bg = pyqtgraph.BarGraphItem(x=self.display.eixoX,height=self.display.Level,width=0.6,brush='c')
+                    self.graphicOctave.addItem(self.bg)
+                    self.lcdLevel_global.setText(str(round(self.display.globalLevel, 2)).replace(".",","))
+                    self.lcdLSmax.setText(str(round(self.display.slowLevel[1].max(), 2)).replace(".",","))
+                    self.lcdLSmin.setText(str(round(self.display.slowLevel[1].min(), 2)).replace(".",","))
+                    self.lcdLFmax.setText(str(round(self.display.fastLevel[1].max(), 2)).replace(".",","))
+                    self.lcdLFmin.setText(str(round(self.display.fastLevel[1].min(), 2)).replace(".",","))
+                    self.lcdLImax.setText(str(round(self.display.impulseLevel[1].max(), 2)).replace(".",","))
+                    self.lcdLImin.setText(str(round(self.display.impulseLevel[1].min(), 2)).replace(".",","))
+                else:
+                    self.graphicOctave.clear()
+                    self.bg = pyqtgraph.BarGraphItem(x=self.display.eixoX,height=self.display.RT['T20'],width=0.6,brush='c')
+                    self.graphicOctave.setYRange(0,self.display.RT['T10'].max()+2)
+                    # self.graphicOctave.setYRange(0, 30)
+                    self.graphicOctave.setLabel('left', "Reverberation Time [s]")
+                    self.graphicOctave.setLabel('bottom', "Frequency [Hz]")
+                    self.graphicOctave.addItem(self.bg)
+                    self.ax = self.graphicOctave.getAxis('bottom') #This is the trick  
+                    self.ax.setTicks([self.display.strFreq])
+                    self.lcdLevel_global.setText(str(round(self.display.globalLevel, 2)).replace(".",","))
+                    self.lcdLSmax.setText(str(round(self.display.slowLevel[1].max(), 2)).replace(".",","))
+                    self.lcdLSmin.setText(str(round(self.display.slowLevel[1].min(), 2)).replace(".",","))
+                    self.lcdLFmax.setText(str(round(self.display.fastLevel[1].max(), 2)).replace(".",","))
+                    self.lcdLFmin.setText(str(round(self.display.fastLevel[1].min(), 2)).replace(".",","))
+                    self.lcdLImax.setText(str(round(self.display.impulseLevel[1].max(), 2)).replace(".",","))
+                    self.lcdLImin.setText(str(round(self.display.impulseLevel[1].min(), 2)).replace(".",","))
             else:
                 #Temporizador de medição - contagem regressiva
                 self.countdown = round(self.durationInfo - self.display.framesRead/self.samplingRate, 1)
@@ -101,6 +159,9 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
                     self.mins, self.secs = divmod(int(self.countdown), 60)
                     self.timeformat = '{:02d}:{:02d}'.format(self.mins, self.secs)
                     self.lblDurationinfo.setText(self._translate("winMNPS", self.timeformat ))
+                self.graphicOctave.clear()
+                self.bg = pyqtgraph.BarGraphItem(x=self.display.eixoX,height=self.display.Level,width=0.6,brush='c')
+                self.graphicOctave.addItem(self.bg)
             
             # Ajuste do ícone btnPlay para o final da gravação
             if self.display.key==False:
@@ -112,8 +173,14 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
                 self.btnPlay.setIcon(QtGui.QIcon("icon/Play_noclick.png"))
                 self.btnStop.setEnabled(False)
                 self.btnStop.setIcon(QtGui.QIcon("icon/Stop_noclick.png"))
+                self.btnNewproject.setEnabled(False)
+                self.btnNewproject.setIcon(QtGui.QIcon("icon/NewProject_noclick.png"))
                 self.btnSetup.setEnabled(False)
                 self.btnSetup.setIcon(QtGui.QIcon("icon/Setup_noclick.png"))
+                self.btnCalibrate.setEnabled(False)
+                self.btnCalibrate.setIcon(QtGui.QIcon("icon/Calibrate_noclick.png"))
+                self.btnInfo.setEnabled(False)
+                self.btnInfo.setIcon(QtGui.QIcon("icon/info_noclick.png"))
                 self.qTimer.stop()
         # self.fim=time.time()
         # print('updateGUI: ', self.fim-self.inicio, '[s]')
@@ -132,14 +199,31 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
                 self.btnPlay.setIcon(QtGui.QIcon("icon/Play_click.png"))
         else:
             self.display.key=False
-            self.duration = self.cacheSetup['durationMeasure'][0][0]
+            if self.cacheSetup['template'][0] == 'frequencyAnalyser':
+                # self.durationInfo = self.cacheSetup['durationMeasure'][0][0]
+                self.duration = self.cacheSetup['durationMeasure'][0][0]
+                
+            if self.cacheSetup['template'][0] == 'reverberationTime':
+                # self.durationInfo = self.cacheSetup['durationSignal'][0][0] +\
+                #                             self.cacheSetup['startMargin'][0][0] +\
+                #                             self.cacheSetup['stopMargin'][0][0]
+                self.duration = self.cacheSetup['durationSignal'][0][0]
+            
             self.display = pyaudioStream(device        = default.device,
                                         samplingRate   = self.samplingRate,
                                         duration       = self.duration,
                                         inputChannels  = default.inputChannels,
+                                        outputChannels = default.outChannels,
                                         timeConstant   = self.cacheSetup['inTimeweighting'][0][0],
+                                        fstart         = self.cacheSetup['freqMin'][0][0],
+                                        fstop          = self.cacheSetup['freqMax'][0][0],
+                                        ffraction      = self.cacheSetup['fraction'][0][0],
                                         Freqweighting  = self.cacheSetup['inFreqweighting'][0],
-                                        template       = 'frequencyAnalyser')
+                                        method         = self.cacheSetup['method'][0],
+                                        startMargin    = self.cacheSetup['startMargin'][0][0], 
+                                        stopMargin     = self.cacheSetup['stopMargin'][0][0],
+                                        average        = self.cacheSetup['average'][0][0],
+                                        template       = self.cacheSetup['template'][0])
             self.qTimer.timeout.connect(self.Record)
             self.qTimer.start()
             self.display.streamStart()
@@ -147,12 +231,30 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
             self.btnPlay.setIcon(QtGui.QIcon("icon/Play_click.png"))
             self.btnStop.setEnabled(True)
             self.btnStop.setIcon(QtGui.QIcon("icon/Stop.png"))
+            self.btnNewproject.setEnabled(False)
+            self.btnNewproject.setIcon(QtGui.QIcon("icon/NewProject_noclick.png"))
             self.btnSetup.setEnabled(False)
             self.btnSetup.setIcon(QtGui.QIcon("icon/Setup_noclick.png"))
+            self.btnCalibrate.setEnabled(False)
+            self.btnCalibrate.setIcon(QtGui.QIcon("icon/Calibrate_noclick.png"))
+            self.btnInfo.setEnabled(False)
+            self.btnInfo.setIcon(QtGui.QIcon("icon/info_noclick.png"))
             self.btnSave.setEnabled(False)
             self.btnSave.setIcon(QtGui.QIcon("icon/Save_noclick.png"))
             self.btnDelete.setEnabled(False)
             self.btnDelete.setIcon(QtGui.QIcon("icon/Delete_noclick.png"))
+
+    def btnCalibre_Action(self):
+        self.display.key=False
+        self.btnCalibrate.setIcon(QtGui.QIcon("icon/Calibrate_click.png"))
+        dlgCalibration = calib()
+        # dlgCalibration.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
+        # dlgCalibration.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
+        dlgCalibration.update()
+        dlgCalibration.setup=False
+        dlgCalibration.exec_()
+        if dlgCalibration.returnDisplay:
+            self.return_pyaudioStream()
 
     def btnStop_Action(self):
         self.btnStop.setIcon(QtGui.QIcon("icon/Stop_click.png"))
@@ -176,14 +278,41 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
         if dlgSetup.returnDisplay:
             self.return_pyaudioStream()
 
+    def btnInfo_Action(self):
+        self.btnInfo.setIcon(QtGui.QIcon("icon/info_click.png"))
+        self.display.key=False
+        dlgAbout = about()
+        # dlgAbout.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
+        # dlgAbout.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
+        dlgAbout.exec_()
+        if dlgAbout.returnDisplay:
+            self.return_pyaudioStream()
+
+    def btnNewproject_Action(self):
+        self.btnNewproject.setIcon(QtGui.QIcon("icon/NewProject_click.png"))
+        self.display.key=False
+        dlgNewProject = newProject()
+        # dlgNewProject.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
+        # dlgNewProject.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
+        dlgNewProject.exec_()
+        if dlgNewProject.returnDisplay:
+            self.return_pyaudioStream()
+
+
     def return_pyaudioStream(self):
         self.cacheSetup=loadmat('cacheSetup.mat')
         self.btnPlay.setEnabled(True)
         self.btnPlay.setIcon(QtGui.QIcon("icon/Play.png"))
         self.btnStop.setEnabled(False)
         self.btnStop.setIcon(QtGui.QIcon("icon/Stop_noclick.png"))
+        self.btnNewproject.setEnabled(True)
+        self.btnNewproject.setIcon(QtGui.QIcon("icon/NewProject.png"))
         self.btnSetup.setEnabled(True)
         self.btnSetup.setIcon(QtGui.QIcon("icon/Setup.png"))
+        self.btnCalibrate.setEnabled(True)
+        self.btnCalibrate.setIcon(QtGui.QIcon("icon/Calibrate.png"))
+        self.btnInfo.setEnabled(True)
+        self.btnInfo.setIcon(QtGui.QIcon("icon/info.png"))
         self.btnSave.setEnabled(False)
         self.btnSave.setIcon(QtGui.QIcon("icon/Save_noclick.png"))
         self.btnDelete.setEnabled(False)
@@ -193,13 +322,23 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
         elif self.cacheSetup['inTimeweighting'][0][0] == 0.125: self.inTimeweighting = 'F'
         else: self.inTimeweighting = 'I'
         
-        self.durationInfo = self.cacheSetup['durationMeasure'][0][0]
-        self.duration = self.cacheSetup['durationMeasure'][0][0]
+        if self.cacheSetup['template'][0] == 'frequencyAnalyser':
+            self.durationInfo = self.cacheSetup['durationMeasure'][0][0]
+            self.duration = self.cacheSetup['durationMeasure'][0][0]
+            self.template = 'Frequency Analysis'
+        else:
+            self.durationInfo = self.cacheSetup['durationSignal'][0][0] +\
+                                self.cacheSetup['startMargin'][0][0] +\
+                                self.cacheSetup['stopMargin'][0][0] +\
+                                self.display.timeSNR
+            self.duration = self.cacheSetup['durationSignal'][0][0]
+            self.template = 'Reverberation Time'
+            
+        self.retranslateUi(self, self.cacheSetup['inFreqweighting'][0], self.template, self.inTimeweighting)
         self.mins, self.secs = divmod(int(self.durationInfo), 60)
         self.timeformat = '{:02d}:{:02d}'.format(self.mins, self.secs)
-        self.projectInfos = loadmat('projectInfos.mat')
-        self.retranslateUi(self, self.cacheSetup['inFreqweighting'][0], self.inTimeweighting)
         self.lblDurationinfo.setText(self._translate("winMNPS", self.timeformat))
+        self.projectInfos = loadmat('projectInfos.mat')
         self.lblProjectinfo.setText(self._translate("winMNPS",
                                                     "<html><head/><body><p align=\"center\">"
                                                     + self.projectInfos['name'][0] + " - Measurement "
@@ -209,10 +348,27 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
                                     samplingRate   = self.samplingRate,
                                     duration       = self.duration,
                                     inputChannels  = default.inputChannels,
+                                    outputChannels = default.outChannels,
                                     timeConstant   = self.cacheSetup['inTimeweighting'][0][0],
+                                    fstart         = self.cacheSetup['freqMin'][0][0],
+                                    fstop          = self.cacheSetup['freqMax'][0][0],
+                                    ffraction      = self.cacheSetup['fraction'][0][0],
                                     Freqweighting  = self.cacheSetup['inFreqweighting'][0],
+                                    method         = self.cacheSetup['method'][0],
+                                    startMargin    = self.cacheSetup['startMargin'][0][0], 
+                                    stopMargin     = self.cacheSetup['stopMargin'][0][0],
+                                    average        = self.cacheSetup['average'][0][0],
                                     template       = 'stand-by')
         self.display.streamStart()
+        # Configurações gráficas
+        self.graphicOctave.plotItem.showGrid(False, True, 0.7)
+        self.graphicOctave.plotItem.setLogMode(x=False, y=False)
+        self.graphicOctave.setYRange(0,120)
+        self.graphicOctave.setLabel('left', "SPL [dB]")
+        self.graphicOctave.setLabel('bottom', "Frequency [Hz]")
+        self.ax = self.graphicOctave.getAxis('bottom') #This is the trick  
+        self.ax.setTicks([self.display.strFreq])
+
         '''Update nativo do Qt interval = 1s = 1000ms'''
         self.qTimer.setInterval(int(self.cacheSetup['inTimeweighting'][0][0]*1000))
         self.qTimer.timeout.connect(self.standby)
@@ -224,12 +380,16 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
         os.chdir(path_project)
         # pathString = path_project + dataProject['name'][0]
         os.chdir(dataProject['name'][0])
-        saveString = "Measurement " + str(dataProject['numMed'][0][0]) + ".xlsx"
+        if self.display.template == 'frequencyAnalyser':
+            saveString = "Measurement " + str(dataProject['numMed'][0][0]) + " NPS.xlsx"
+        else:
+            saveString = "Measurement " + str(dataProject['numMed'][0][0]) + " TR.xlsx"
+        
         dlgSave = save()
         dlgSave.exec_()
-        
         if dlgSave.clicked:
             import xlsxwriter
+            from datetime import datetime
             from numpy import ones, float32
             
             # Data e hora
@@ -246,167 +406,284 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
             elif self.display.timeConstant == 0.035: timeStr = 'Impulse'; timeStrIdx = 'I'
             else:                                    timeStr = 'Slow';    timeStrIdx = 'S'
             
-            # Níveis máximos e mínimos por banda de oitava
-            LevelFreq_min = ones((self.display.freqs.size), dtype=float32)*1000
-            LevelFreq_max = ones((self.display.freqs.size), dtype=float32)*-1000
-            framesRead = 0
-            numSamples = self.display.correctedData[0].size
-            countDn = numSamples - framesRead
-            while framesRead <= numSamples or countDn > self.display.frames:
-                  globalLevel, Level = getBandLevel(data=self.display.correctedData[0, framesRead:framesRead+self.display.frames],
-                                                    pyfilterbank = self.display.pyfilterbank,
-                                                    fc = self.display.freqs,  pondFreq=self.display.Freqweighting)
-                  for i in range(Level.size):
-                      if Level[i] < LevelFreq_min[i]:
-                          LevelFreq_min[i] = round(Level[i], 2)
-                      if Level[i] > LevelFreq_max[i]:
-                          LevelFreq_max[i] = round(Level[i], 2)
-                      framesRead += self.display.frames
-                      countDn -= framesRead
-                          
-            # Criando planilha de resultados
+            if self.display.template == 'frequencyAnalyser':
+                # Níveis máximos e mínimos por banda de oitava
+                LevelFreq_min = ones((self.display.Level.size), dtype=float32)*1000
+                LevelFreq_max = ones((self.display.Level.size), dtype=float32)*-1000
+                framesRead = 0
+                numSamples = self.display.correctedData.size
+                countDn = numSamples - framesRead
+                while framesRead <= numSamples or countDn > self.display.frames:
+                      globalLevel, Level = getBandLevel(data=self.display.correctedData[0, framesRead:framesRead+self.display.frames],
+                                                        pyfilterbank = self.display.pyfilterbank,
+                                                        fc = self.display.freqs,  pondFreq=self.display.Freqweighting)
+                      for i in range(Level.size):
+                          if Level[i] < LevelFreq_min[i]:
+                              LevelFreq_min[i] = round(Level[i], 2)
+                          if Level[i] > LevelFreq_max[i]:
+                              LevelFreq_max[i] = round(Level[i], 2)
+                          framesRead += self.display.frames
+                          countDn -= framesRead
+            # Criando planilha de Results
             planilha = xlsxwriter.Workbook(saveString)
             bold = planilha.add_format({'bold': True})
-            folhaResultados = planilha.add_worksheet(name="Results")
+            folhaResults = planilha.add_worksheet(name="Results")
             folhaSetup      = planilha.add_worksheet(name="Settings")
             if dlgSave.saveAll:
                 folhaReferencia = planilha.add_worksheet(name="Reference signals")
             formatSection = planilha.add_format({'bold': True, 'border': 4, 'align': 'center', 'valign': 'vcenter', 'fg_color': '#66CCFF'})
             formatInformationT = planilha.add_format({'bold': True, 'border': 4, 'align': 'center', 'valign': 'vcenter', 'fg_color': '#CCCCCC'})
             formatInformationN = planilha.add_format({'bold': True, 'border': 4, 'align': 'center', 'valign': 'vcenter', 'fg_color': '#99FFFF'})
-            
-            if dlgSave.saveAll:
-                # Folha de sinais referência
-                folhaReferencia.set_column(0,1,15)
-                folhaReferencia.merge_range(0,0,0,1, 'Reference signals', formatSection)
-                folhaReferencia.write("A2", "Measurement", bold)
-                folhaReferencia.write_column("A3", self.display.correctedData[0])
-                folhaReferencia.write("B2", "Calibration", bold)
-                folhaReferencia.write_column("B3", self.display.cacheSetup['calibRec'][0])
-            # Folha de configurações do template
-            folhaSetup.set_column(0,0,25,bold)
-            folhaSetup.set_column(1,1,20)
-            folhaSetup.merge_range(0,0,0,1, 'Measurement setup', formatSection)
-            folhaSetup.write("A2", "Template", bold);                 folhaSetup.write("B2", "Frequency Analysis")
-            folhaSetup.write("A3", "Frequency range", bold);          folhaSetup.write("B3", freqStr[0]+' Hz a '+freqStr[-1]+'Hz')
-            folhaSetup.write("A4", "Octave band", bold);              folhaSetup.write("B4", '1/3')
-            folhaSetup.write("A5", "Duration", bold);                 folhaSetup.write("B5", str(self.display.duration-1).replace(".",",")+' s')
-            folhaSetup.write("A6", "Frequency weighting", bold);      folhaSetup.write("B6", self.display.Freqweighting)
-            folhaSetup.write("A7", "Integration time", bold);         folhaSetup.write("B7", timeStr)
-            folhaSetup.write("A8", "Sampling rate", bold);            folhaSetup.write("B8", str(self.display.samplingRate)+' Hz')
-            folhaSetup.write("A9", "Microphone sensitivity", bold);   folhaSetup.write("B9", str(self.display.cacheSetup['sensibilidade'][0][0]*1000).replace(".",",")+' mV/Pa')
-            folhaSetup.write("A10", "Correction", bold);              folhaSetup.write("B10", str(self.display.cacheSetup['correcao'][0][0]).replace(".",",")+' dB')
-            folhaSetup.write("A11", "Adjustment factor", bold);       folhaSetup.write("B11", str(round(self.display.cacheSetup['calibrationFC'][0][0], 4)).replace(".",","))
-            folhaSetup.write("A12", "Date", bold);                    folhaSetup.write("B12", hoje.strftime("%d/%m/%Y"))
-            folhaSetup.write("A13", "Hour", bold);                    folhaSetup.write("B13", hoje.strftime("%H:%M:%S"))
-            # Folha de resultados 
-            # Análise espectral
-            folhaResultados.merge_range(0,0,0,self.display.freqs.size, 'Frequency Analysis', formatSection)
-            folhaResultados.set_column(0,0,15,bold)
-            folhaResultados.set_row(0,15,bold)
-            folhaResultados.write("A2", "Frequency [Hz]")
-            folhaResultados.write("A3", "L"+self.display.Freqweighting+','+timeStrIdx+",Min      [dB]")
-            folhaResultados.write("A4", "L"+self.display.Freqweighting+','+timeStrIdx+",Max     [dB]")
-            folhaResultados.write("A5", "L"+self.display.Freqweighting+"eq,"+timeStrIdx+'          [dB]')
-            for i in range(len(freqStr)):
-                folhaResultados.write(1, i+1, freqStr[i])
-                folhaResultados.write(2, i+1, round(LevelFreq_min[i], 2))
-                folhaResultados.write(3, i+1, round(LevelFreq_max[i], 2))
-                folhaResultados.write(4, i+1, round(self.display.Level[i], 2))
-            # Análise temporal
-            folhaResultados.set_column(1,1,15)
-            folhaResultados.merge_range(27,0,27,self.display.freqs.size, 'Time analysis', formatSection)
-            folhaResultados.merge_range(28,0,29,0,'L'+self.display.Freqweighting+','+'I', formatInformationT)
-            folhaResultados.write("B29", 'Time         [s]', bold)
-            folhaResultados.write_row("C29", self.display.impulseLevel[0])
-            folhaResultados.write("B30", 'Amplitude [dB]', bold)
-            folhaResultados.write_row("C30", self.display.impulseLevel[1])
-            folhaResultados.merge_range(31,0,32,0,'L'+self.display.Freqweighting+','+'F', formatInformationT)
-            folhaResultados.write("B32", 'Time         [s]', bold)
-            folhaResultados.write_row("C32", self.display.fastLevel[0])
-            folhaResultados.write("B33", 'Amplitude [dB]', bold)
-            folhaResultados.write_row("C33", self.display.fastLevel[1])
-            folhaResultados.merge_range(34,0,35,0,'L'+self.display.Freqweighting+','+'S', formatInformationT)
-            folhaResultados.write("B35", 'Time         [s]', bold)
-            folhaResultados.write_row("C35", self.display.slowLevel[0])
-            folhaResultados.write("B36", 'Amplitude [dB]', bold)
-            folhaResultados.write_row("C36", self.display.slowLevel[1])
-            # Gráficos em linha
-            plotLineI = planilha.add_chart({'type': 'line'})
-            plotLineI.add_series({
-                'name': ['Results', 28,0],
-                'categories': ['Results', 28,2,28, self.display.impulseLevel[0].size],
-                'values': ['Results', 29,2,29, self.display.impulseLevel[1].size]
-                })
-            plotLineI.set_title({'name': 'Sound pressure level measured in Impulse weighting'})
-            plotLineI.set_x_axis({'name': 'Time s'})
-            plotLineI.set_y_axis({'name': 'L'+self.display.Freqweighting+',I dB'})
-            folhaResultados.insert_chart('A38', plotLineI, {'x_offset': 0, 'y_offset': 0, 'x_scale': 1, 'y_scale': 1})
-            folhaResultados.write("G38", 'L'+self.display.Freqweighting+'I,max', formatInformationT)
-            folhaResultados.write("H38", 'L'+self.display.Freqweighting+'I,min', formatInformationT)
-            folhaResultados.write("G39", str(round(self.display.impulseLevel[1].max(), 1)).replace(".",","), formatInformationN)
-            folhaResultados.write("H39", str(round(self.display.impulseLevel[1].min(), 1)).replace(".",","), formatInformationN)
-            folhaResultados.merge_range(39,6,39,7, 'L'+self.display.Freqweighting+'eq,I Global', formatInformationT)
-            folhaResultados.merge_range(40,6,40,7, str(round(self.display.impulseLevelGlobal, 1)).replace(".",","), formatInformationN)
-            
-            plotLineF = planilha.add_chart({'type': 'line'})
-            plotLineF.add_series({
-                'name': ['Results', 31,0],
-                'categories': ['Results', 31,2,31, self.display.fastLevel[0].size],
-                'values': ['Results', 32,2,32, self.display.fastLevel[1].size]
-                })
-            plotLineF.set_title({'name': 'Sound pressure level measured in Fast weighting'})
-            plotLineF.set_x_axis({'name': 'Time s'})
-            plotLineF.set_y_axis({'name': 'L'+self.display.Freqweighting+',F dB'})
-            folhaResultados.insert_chart('I38', plotLineF, {'x_offset': 33, 'y_offset': 0, 'x_scale': 1, 'y_scale': 1})
-            folhaResultados.write("Q38", 'L'+self.display.Freqweighting+'F,max', formatInformationT)
-            folhaResultados.write("R38", 'L'+self.display.Freqweighting+'F,min', formatInformationT)
-            folhaResultados.write("Q39", str(round(self.display.fastLevel[1].max(), 1)).replace(".",","), formatInformationN)
-            folhaResultados.write("R39", str(round(self.display.fastLevel[1].min(), 1)).replace(".",","), formatInformationN)
-            folhaResultados.merge_range(39,16,39,17, 'L'+self.display.Freqweighting+'eq,F Global', formatInformationT)
-            folhaResultados.merge_range(40,16,40,17, str(round(self.display.fastLevelGlobal, 1)).replace(".",","), formatInformationN)
-            
-            plotLineS = planilha.add_chart({'type': 'line'})
-            plotLineS.add_series({
-                'name': ['Results', 34,0],
-                'categories': ['Results', 34,2,34, self.display.slowLevel[0].size],
-                'values': ['Results', 35,2,35, self.display.slowLevel[1].size]
-                })
-            plotLineS.set_title({'name': 'Sound pressure level measured in Slow weighting'})
-            plotLineS.set_x_axis({'name': 'Time s'})
-            plotLineS.set_y_axis({'name': 'L'+self.display.Freqweighting+',S dB'})
-            folhaResultados.insert_chart('T38', plotLineS, {'x_offset': -33, 'y_offset': 0, 'x_scale': 1, 'y_scale': 1})
-            folhaResultados.write("AA38", 'L'+self.display.Freqweighting+'S,max', formatInformationT)
-            folhaResultados.write("AB38", 'L'+self.display.Freqweighting+'S,min', formatInformationT)
-            folhaResultados.write("AA39", str(round(self.display.slowLevel[1].max(), 1)).replace(".",","), formatInformationN)
-            folhaResultados.write("AB39", str(round(self.display.slowLevel[1].min(), 1)).replace(".",","), formatInformationN)
-            folhaResultados.merge_range(39,26,39,27, 'L'+self.display.Freqweighting+'eq,S Global', formatInformationT)
-            folhaResultados.merge_range(40,26,40,27, str(round(self.display.slowLevelGlobal, 1)).replace(".",","), formatInformationN)
-            
-            # Gráfico em barras
-            plotOctave = planilha.add_chart({'type': 'column'})
-            plotOctave.add_series({
-                'name': ['Results', 2,0],
-                'categories': ['Results', 1,1,0,self.display.freqs.size],
-                'values': ['Results', 2,1,2,self.display.freqs.size]
-                })
-            plotOctave.add_series({
-                'name': ['Results', 3,0],
-                'categories': ['Results', 1,1,0,self.display.freqs.size],
-                'values': ['Results', 3,1,3,self.display.freqs.size]
-                })
-            plotOctave.add_series({
-                'name': ['Results', 4,0],
-                'categories': ['Results', 1,1,0,self.display.freqs.size],
-                'values': ['Results', 4,1,4,self.display.freqs.size]
-                })
-            plotOctave.set_title({'name': 'Sound pressure level measured in 1/3 octave bands'})
-            plotOctave.set_x_axis({'name': 'Frequência Hz'})
-            plotOctave.set_y_axis({'name': 'L'+self.display.Freqweighting+','+timeStrIdx+' dB'})
-            folhaResultados.insert_chart('A7', plotOctave, {'x_offset': 0, 'y_offset': 0, 'x_scale': 2, 'y_scale': 1.4})
-            folhaResultados.merge_range(6,15,6,16, 'L'+self.display.Freqweighting+'eq,'+timeStrIdx+' Global', formatInformationT)
-            folhaResultados.merge_range(7,15,7,16, str(round(self.display.globalLevel, 1)).replace(".",","), formatInformationN)
-            
+            if self.display.template == 'frequencyAnalyser':
+                if dlgSave.saveAll:
+                    # Folha de sinais referência
+                    folhaReferencia.set_column(0,1,15)
+                    folhaReferencia.merge_range(0,0,0,1, 'Reference signals', formatSection)
+                    folhaReferencia.write("A2", "Measurement", bold)
+                    folhaReferencia.write_column("A3", self.display.correctedData[0,:])
+                    folhaReferencia.write("B2", "Calibration", bold)
+                    folhaReferencia.write_column("B3", self.display.cacheSetup['calibRec'][0])
+                # Folha de configurações do template
+                folhaSetup.set_column(0,0,25,bold)
+                folhaSetup.set_column(1,1,20)
+                folhaSetup.merge_range(0,0,0,1, 'Measurement setup', formatSection)
+                folhaSetup.write("A2", "Template", bold);                 folhaSetup.write("B2", "Frequency Analysis")
+                folhaSetup.write("A3", "Frequency range", bold);          folhaSetup.write("B3", freqStr[0]+' Hz a '+freqStr[-1]+'Hz')
+                folhaSetup.write("A4", "Octave band", bold);              folhaSetup.write("B4", '1/'+str(self.display.ffraction))
+                folhaSetup.write("A5", "Duration", bold);                 folhaSetup.write("B5", str(self.display.duration-1).replace(".",",")+' s')
+                folhaSetup.write("A6", "Frequency weighting", bold);      folhaSetup.write("B6", self.display.Freqweighting)
+                folhaSetup.write("A7", "Integration time", bold);         folhaSetup.write("B7", timeStr)
+                folhaSetup.write("A8", "Sampling rate", bold);            folhaSetup.write("B8", str(self.display.samplingRate)+' Hz')
+                folhaSetup.write("A9", "Microphone sensitivity", bold);   folhaSetup.write("B9", str(self.display.cacheSetup['Sensitivity'][0][0]*1000).replace(".",",")+' mV/Pa')
+                folhaSetup.write("A10", "Correction", bold);              folhaSetup.write("B10", str(self.display.cacheSetup['correcao'][0][0]).replace(".",",")+' dB')
+                folhaSetup.write("A11", "Adjustment factor", bold);       folhaSetup.write("B11", str(round(self.display.cacheSetup['calibrationFC'][0][0], 4)).replace(".",","))
+                folhaSetup.write("A12", "Date", bold);                    folhaSetup.write("B12", hoje.strftime("%d/%m/%Y"))
+                folhaSetup.write("A13", "Hour", bold);                    folhaSetup.write("B13", hoje.strftime("%H:%M:%S"))
+                # Folha de Results 
+                # Frequency Analysis
+                folhaResults.merge_range(0,0,0,self.display.freqs.size, 'Frequency Analysis', formatSection)
+                folhaResults.set_column(0,0,15,bold)
+                folhaResults.set_row(0,15,bold)
+                folhaResults.write("A2", "Frequency [Hz]")
+                folhaResults.write("A3", "L"+self.display.Freqweighting+','+timeStrIdx+",Min      [dB]")
+                folhaResults.write("A4", "L"+self.display.Freqweighting+','+timeStrIdx+",Max     [dB]")
+                folhaResults.write("A5", "L"+self.display.Freqweighting+"eq,"+timeStrIdx+'          [dB]')
+                for i in range(len(freqStr)):
+                    folhaResults.write(1, i+1, freqStr[i])
+                    folhaResults.write(2, i+1, round(LevelFreq_min[i], 2))
+                    folhaResults.write(3, i+1, round(LevelFreq_max[i], 2))
+                    folhaResults.write(4, i+1, round(self.display.Level[i], 2))
+                # Análise temporal
+                folhaResults.set_column(1,1,15)
+                folhaResults.merge_range(27,0,27,self.display.freqs.size, 'Time analysis', formatSection)
+                folhaResults.merge_range(28,0,29,0,'L'+self.display.Freqweighting+','+'I', formatInformationT)
+                folhaResults.write("B29", 'Time         [s]', bold)
+                folhaResults.write_row("C29", self.display.impulseLevel[0])
+                folhaResults.write("B30", 'Amplitude [dB]', bold)
+                folhaResults.write_row("C30", self.display.impulseLevel[1])
+                folhaResults.merge_range(31,0,32,0,'L'+self.display.Freqweighting+','+'F', formatInformationT)
+                folhaResults.write("B32", 'Time         [s]', bold)
+                folhaResults.write_row("C32", self.display.fastLevel[0])
+                folhaResults.write("B33", 'Amplitude [dB]', bold)
+                folhaResults.write_row("C33", self.display.fastLevel[1])
+                folhaResults.merge_range(34,0,35,0,'L'+self.display.Freqweighting+','+'S', formatInformationT)
+                folhaResults.write("B35", 'Time         [s]', bold)
+                folhaResults.write_row("C35", self.display.slowLevel[0])
+                folhaResults.write("B36", 'Amplitude [dB]', bold)
+                folhaResults.write_row("C36", self.display.slowLevel[1])
+                # Gráficos em linha
+                plotLineI = planilha.add_chart({'type': 'line'})
+                plotLineI.add_series({
+                    'name': ['Results', 28,0],
+                    'categories': ['Results', 28,2,28, self.display.impulseLevel[0].size],
+                    'values': ['Results', 29,2,29, self.display.impulseLevel[1].size]
+                    })
+                plotLineI.set_title({'name': 'Sound pressure level measured in Impulse weighting'})
+                plotLineI.set_x_axis({'name': 'Time s'})
+                plotLineI.set_y_axis({'name': 'L'+self.display.Freqweighting+',I dB'})
+                folhaResults.insert_chart('A38', plotLineI, {'x_offset': 0, 'y_offset': 0, 'x_scale': 1, 'y_scale': 1})
+                folhaResults.write("G38", 'L'+self.display.Freqweighting+'I,max', formatInformationT)
+                folhaResults.write("H38", 'L'+self.display.Freqweighting+'I,min', formatInformationT)
+                folhaResults.write("G39", str(round(self.display.impulseLevel[1].max(), 2)).replace(".",","), formatInformationN)
+                folhaResults.write("H39", str(round(self.display.impulseLevel[1].min(), 2)).replace(".",","), formatInformationN)
+                folhaResults.merge_range(39,6,39,7, 'L'+self.display.Freqweighting+'eq,I Global', formatInformationT)
+                folhaResults.merge_range(40,6,40,7, str(round(self.display.impulseLevelGlobal, 1)).replace(".",","), formatInformationN)
+                
+                plotLineF = planilha.add_chart({'type': 'line'})
+                plotLineF.add_series({
+                    'name': ['Results', 31,0],
+                    'categories': ['Results', 31,2,31, self.display.fastLevel[0].size],
+                    'values': ['Results', 32,2,32, self.display.fastLevel[1].size]
+                    })
+                plotLineF.set_title({'name': 'Sound pressure level measured in Fast weighting'})
+                plotLineF.set_x_axis({'name': 'Time s'})
+                plotLineF.set_y_axis({'name': 'L'+self.display.Freqweighting+',F dB'})
+                folhaResults.insert_chart('I38', plotLineF, {'x_offset': 33, 'y_offset': 0, 'x_scale': 1, 'y_scale': 1})
+                folhaResults.write("Q38", 'L'+self.display.Freqweighting+'F,max', formatInformationT)
+                folhaResults.write("R38", 'L'+self.display.Freqweighting+'F,min', formatInformationT)
+                folhaResults.write("Q39", str(round(self.display.fastLevel[1].max(), 2)).replace(".",","), formatInformationN)
+                folhaResults.write("R39", str(round(self.display.fastLevel[1].min(), 2)).replace(".",","), formatInformationN)
+                folhaResults.merge_range(39,16,39,17, 'L'+self.display.Freqweighting+'eq,F Global', formatInformationT)
+                folhaResults.merge_range(40,16,40,17, str(round(self.display.fastLevelGlobal, 1)).replace(".",","), formatInformationN)
+                
+                plotLineS = planilha.add_chart({'type': 'line'})
+                plotLineS.add_series({
+                    'name': ['Results', 34,0],
+                    'categories': ['Results', 34,2,34, self.display.slowLevel[0].size],
+                    'values': ['Results', 35,2,35, self.display.slowLevel[1].size]
+                    })
+                plotLineS.set_title({'name': 'Sound pressure level measured in Slow weighting'})
+                plotLineS.set_x_axis({'name': 'Time s'})
+                plotLineS.set_y_axis({'name': 'L'+self.display.Freqweighting+',S dB'})
+                folhaResults.insert_chart('T38', plotLineS, {'x_offset': -33, 'y_offset': 0, 'x_scale': 1, 'y_scale': 1})
+                folhaResults.write("AA38", 'L'+self.display.Freqweighting+'S,max', formatInformationT)
+                folhaResults.write("AB38", 'L'+self.display.Freqweighting+'S,min', formatInformationT)
+                folhaResults.write("AA39", str(round(self.display.slowLevel[1].max(), 2)).replace(".",","), formatInformationN)
+                folhaResults.write("AB39", str(round(self.display.slowLevel[1].min(), 2)).replace(".",","), formatInformationN)
+                folhaResults.merge_range(39,26,39,27, 'L'+self.display.Freqweighting+'eq,S Global', formatInformationT)
+                folhaResults.merge_range(40,26,40,27, str(round(self.display.slowLevelGlobal, 1)).replace(".",","), formatInformationN)
+                
+                # Gráfico em barras
+                plotOctave = planilha.add_chart({'type': 'column'})
+                plotOctave.add_series({
+                    'name': ['Results', 2,0],
+                    'categories': ['Results', 1,1,0,self.display.freqs.size],
+                    'values': ['Results', 2,1,2,self.display.freqs.size]
+                    })
+                plotOctave.add_series({
+                    'name': ['Results', 3,0],
+                    'categories': ['Results', 1,1,0,self.display.freqs.size],
+                    'values': ['Results', 3,1,3,self.display.freqs.size]
+                    })
+                plotOctave.add_series({
+                    'name': ['Results', 4,0],
+                    'categories': ['Results', 1,1,0,self.display.freqs.size],
+                    'values': ['Results', 4,1,4,self.display.freqs.size]
+                    })
+                plotOctave.set_title({'name': 'Sound pressure level measured in 1/'+str(self.display.ffraction)+' octave bands'})
+                plotOctave.set_x_axis({'name': 'Frequency Hz'})
+                plotOctave.set_y_axis({'name': 'L'+self.display.Freqweighting+','+timeStrIdx+' dB'})
+                if self.display.ffraction == 1:
+                    folhaResults.insert_chart('A7', plotOctave, {'x_offset': 0, 'y_offset': 0, 'x_scale': 1.65, 'y_scale': 1})
+                    folhaResults.merge_range(6,12,6,13, 'L'+self.display.Freqweighting+'eq,'+timeStrIdx+' Global', formatInformationT)
+                    folhaResults.merge_range(7,12,7,13, str(round(self.display.globalLevel, 1)).replace(".",","), formatInformationN)
+                else:
+                    folhaResults.insert_chart('A7', plotOctave, {'x_offset': 0, 'y_offset': 0, 'x_scale': 2, 'y_scale': 1.4})
+                    folhaResults.merge_range(6,15,6,16, 'L'+self.display.Freqweighting+'eq,'+timeStrIdx+' Global', formatInformationT)
+                    folhaResults.merge_range(7,15,7,16, str(round(self.display.globalLevel, 1)).replace(".",","), formatInformationN)
+            else:
+                if dlgSave.saveAll:
+                    # Folha de sinais referência
+                    folhaReferencia.set_column(0,1,20)
+                    folhaReferencia.merge_range(0,0,0,1, 'Reference signals', formatSection)
+                    folhaReferencia.write("A2", "Impulsive response", bold)
+                    folhaReferencia.write_column("A3", self.display.IR.timeSignal)
+                    folhaReferencia.write("B2", "Calibração", bold)
+                    folhaReferencia.write_column("B3", self.display.cacheSetup['calibRec'][0])
+                # Folha de configurações do template
+                if self.cacheSetup['method'][0] == 'pinkNoise': method = 'Pink noise'
+                if self.cacheSetup['method'][0] == 'whiteNoise': method = 'White noise'
+                if self.cacheSetup['method'][0] == 'sweepExponencial': method = 'Exponential Sweep'
+                # Folha de configurações do template
+                folhaSetup.set_column(1,1,20)
+                folhaSetup.merge_range(0,0,0,1, 'Measurement setup', formatSection)
+                folhaSetup.set_column(0,0,25,bold)
+                folhaSetup.set_column(1,1,20)
+                folhaSetup.write("A2", "Template");                 folhaSetup.write("B2", "Reverberation Time")
+                folhaSetup.write("A3", "Frequency range");          folhaSetup.write("B3", freqStr[0]+' Hz to '+freqStr[-1]+'Hz')
+                folhaSetup.write("A4", "Octave band");             folhaSetup.write("B4", '1/'+str(self.display.ffraction))
+                folhaSetup.write("A5", "Excitement signal");       folhaSetup.write("B5", method)
+                folhaSetup.write("A6", "Signal duration");         folhaSetup.write("B6", str(self.display.duration-1).replace(".",",")+' s')
+                folhaSetup.write("A7", "Escape time");          folhaSetup.write("B7", str(self.display.startMargin).replace(".",",")+' s')
+                folhaSetup.write("A8", "Decay time");      folhaSetup.write("B8", str(self.display.stopMargin).replace(".",",")+' s')
+                folhaSetup.write("A9", "Averages");                   folhaSetup.write("B9", str(int(self.display.average+1)))
+                folhaSetup.write("A10", "Integration time");      folhaSetup.write("B10", timeStr)
+                # Folha de Results
+                folhaResults.merge_range(0,0,0,self.display.freqs.size, 'Frequency Analysis', formatSection)
+                folhaResults.set_column(0,0,25,bold)
+                folhaResults.set_row(0,15,bold)
+                folhaResults.write("A2", "Frequency [Hz]")
+                folhaResults.write("A3", "EDT [S]")
+                folhaResults.write("A4", "T10 [S]")
+                folhaResults.write("A5", "T20 [S]")
+                folhaResults.write("A6", "T30 [S]")
+                for i in range(len(freqStr)):
+                    folhaResults.write(1, i+1, freqStr[i])
+                    folhaResults.write(2, i+1, round(self.display.RT['EDT'][i], 2))
+                    folhaResults.write(3, i+1, round(self.display.RT['T10'][i], 2))
+                    folhaResults.write(4, i+1, round(self.display.RT['T20'][i], 2))
+                    folhaResults.write(5, i+1, round(self.display.RT['T30'][i], 2))
+                # Gráfico em barras do TR
+                plotOctave = planilha.add_chart({'type': 'column'})
+                plotOctave.add_series({
+                    'name': ['Results', 2,0],
+                    'categories': ['Results', 1,1,0,self.display.freqs.size],
+                    'values': ['Results', 2,1,2,self.display.freqs.size]
+                    })
+                plotOctave.add_series({
+                    'name': ['Results', 3,0],
+                    'categories': ['Results', 1,1,0,self.display.freqs.size],
+                    'values': ['Results', 3,1,3,self.display.freqs.size]
+                    })
+                plotOctave.add_series({
+                    'name': ['Results', 4,0],
+                    'categories': ['Results', 1,1,0,self.display.freqs.size],
+                    'values': ['Results', 4,1,4,self.display.freqs.size]
+                    })
+                plotOctave.add_series({
+                    'name': ['Results', 5,0],
+                    'categories': ['Results', 1,1,0,self.display.freqs.size],
+                    'values': ['Results', 5,1,5,self.display.freqs.size]
+                    })
+                plotOctave.set_title({'name': 'Reverberation Time measured in 1/'+str(self.display.ffraction)+' octave bands'})
+                plotOctave.set_x_axis({'name': 'Frequency Hz'})
+                plotOctave.set_y_axis({'name': 'Tempo s'})
+                
+                # Relação Sinal Ruído
+                folhaResults.merge_range(27,0,27,self.display.freqs.size, 'Signal-to-Noise Ratio', formatSection)
+                folhaResults.set_row(0,15,bold)
+                folhaResults.write("A29", "Frequency                  [Hz]")
+                folhaResults.write("A30", "Impulsive response [dB]")
+                folhaResults.write("A31", "Background noise         [dB]")
+                folhaResults.write("A32", "SNR                                [dB]")
+                for i in range(len(freqStr)):
+                    folhaResults.write(28, i+1, freqStr[i])
+                    folhaResults.write(29, i+1, round(self.display.Level_measuredData[i], 2))
+                    folhaResults.write(30, i+1, round(self.display.Level_floorNoise[i], 2))
+                    folhaResults.write(31, i+1, round(self.display.SNR[i], 2))
+                    
+                # Gráfico em barras da SNR
+                plotSNR = planilha.add_chart({'type': 'column'})
+                plotSNR.add_series({
+                    'name': ['Results', 29,0],
+                    'categories': ['Results', 1,1,0,self.display.freqs.size],
+                    'values': ['Results', 29,1,29,self.display.freqs.size]
+                    })
+                plotSNR.add_series({
+                    'name': ['Results', 30,0],
+                    'categories': ['Results', 1,1,0,self.display.freqs.size],
+                    'values': ['Results', 30,1,30,self.display.freqs.size]
+                    })
+                plotSNR.add_series({
+                    'name': ['Results', 31,0],
+                    'categories': ['Results', 1,1,0,self.display.freqs.size],
+                    'values': ['Results', 31,1,31,self.display.freqs.size]
+                    })
+                # plotSNR.add_series({
+                #     'name': ['Results', 32,0],
+                #     'categories': ['Results', 1,1,0,self.display.freqs.size],
+                #     'values': ['Results', 5,1,5,self.display.freqs.size]
+                #     })
+                plotSNR.set_title({'name': 'Relação Sinal-Ruido medido em 1/'+str(self.display.ffraction)+' de oitava'})
+                plotSNR.set_x_axis({'name': 'Frequency Hz'})
+                plotSNR.set_y_axis({'name': 'Amplitude dB'})
+                
+                if self.display.ffraction == 1:
+                    folhaResults.insert_chart('A7', plotOctave, {'x_offset': 0, 'y_offset': 0, 'x_scale': 1.65, 'y_scale': 1})
+                    folhaResults.insert_chart('A33', plotSNR, {'x_offset': 0, 'y_offset': 0, 'x_scale': 1.65, 'y_scale': 1})
+                else:
+                    folhaResults.insert_chart('A7', plotOctave, {'x_offset': 0, 'y_offset': 0, 'x_scale': 3, 'y_scale': 2})
+                    folhaResults.insert_chart('A33', plotSNR, {'x_offset': 0, 'y_offset': 0, 'x_scale': 3, 'y_scale': 2})
             planilha.close()
             
             os.chdir(path_main)
@@ -429,8 +706,9 @@ class setSetup(QtWidgets.QDialog, guiSetup):
         self.btnCancel.clicked.connect(self.btnCancel_Action)
         self.btnApply.clicked.connect(self.btnApply_Action)
         self.btnCalibrate.clicked.connect(self.btnCalibre_Action)
-        self.btnInfo.clicked.connect(self.btnInfo_Action)
-        self.btnNewproject.clicked.connect(self.btnNewproject_Action)
+        self.Template={0: 'frequencyAnalyser', 1: 'reverberationTime'}
+        self.Fraction={0: 1, 1: 3}
+        self.Method={0: 'sweepExponencial', 1: 'whiteNoise', 2: 'pinkNoise'}
         self.Freqweighting={0: 'A', 1: 'C', 2: 'Z'}
         self.Timeweighting={0: 0.035, 1: 0.125, 2: 1.000}
         self.Timeweightingstr={0: 'Impulse', 1: 'Fast', 2: 'Slow'}
@@ -442,15 +720,31 @@ class setSetup(QtWidgets.QDialog, guiSetup):
         self.qTimer.timeout.connect(self.update)
         self.qTimer.start()
 
+        self.setMethod          = self.cacheSetup['method'][0]
+        self.setTemplate        = self.cacheSetup['template'][0]
+        self.setAverage         = self.cacheSetup['average'][0][0]
+        self.setFreqmin         = self.cacheSetup['freqMin'][0][0]
+        self.setFreqmax         = self.cacheSetup['freqMax'][0][0]
+        self.setFraction        = self.cacheSetup['fraction'][0][0]
+        self.setStartmargin     = self.cacheSetup['startMargin'][0][0]
+        self.setStopmargin      = self.cacheSetup['stopMargin'][0][0]
+        self.setDurationsignal  = self.cacheSetup['durationSignal'][0][0]
         self.setDurationmeasure = self.cacheSetup['durationMeasure'][0][0]
         self.setCorrecao        = self.cacheSetup['correcao'][0][0]
-        self.setSensibilidade   = self.cacheSetup['sensibilidade'][0][0]
+        self.setSensitivity   = self.cacheSetup['Sensitivity'][0][0]
         self.setCalibration     = self.cacheSetup['calibrationFC'][0][0]
         self.setcalibRec        = self.cacheSetup['calibRec'][0]
         self.setFreqweighting   = self.cacheSetup['inFreqweighting'][0][0]
         self.setTimeweighting   = self.cacheSetup['inTimeweighting'][0][0]
         self.minMed, self.secMed = divmod(int(self.setDurationmeasure), 60)
         
+        if self.setTemplate == 'frequencyAnalyser': self.inTemplate.setCurrentIndex(0)
+        if self.setTemplate == 'reverberationTime': self.inTemplate.setCurrentIndex(1)
+        if self.setMethod == 'sweepExponencial': self.inMethod.setCurrentIndex(0)
+        if self.setMethod == 'whiteNoise': self.inMethod.setCurrentIndex(1)
+        if self.setMethod == 'pinkNoise': self.inMethod.setCurrentIndex(2)
+        if self.setFraction == 1: self.inFraction.setCurrentIndex(0)
+        if self.setFraction == 3: self.inFraction.setCurrentIndex(1)
         if self.setFreqweighting == 'A': self.inFreqweighting.setCurrentIndex(0)
         if self.setFreqweighting == 'C': self.inFreqweighting.setCurrentIndex(1)
         if self.setFreqweighting == 'Z': self.inFreqweighting.setCurrentIndex(2)
@@ -458,33 +752,54 @@ class setSetup(QtWidgets.QDialog, guiSetup):
         if self.setTimeweighting == 0.125: self.inTimeweighting.setCurrentIndex(1)
         if self.setTimeweighting == 1.000: self.inTimeweighting.setCurrentIndex(2)
         self.inDurationMeasure.setTime(QtCore.QTime(0, self.minMed, self.secMed))
+        self.inDurationSignal.setValue(self.setDurationsignal)
+        self.inFreqmax.setValue(self.setFreqmax)
+        self.inFreqmin.setValue(self.setFreqmin)
+        self.inStartmargin.setValue(self.setStartmargin)
+        self.inStopmargin.setValue(self.setStopmargin)
+        self.inAverage.setValue(self.setAverage)
         self.lblFTC.setText(str(self.setCorrecao).replace(".",",") + " dB")
         self.inFTC = self.setCorrecao
+        global algo, mins, secs
+        algo = self.inDurationMeasure
+        mins = self.minMed; secs = self.secMed
         
     def update(self):
-        if self.Freqweighting[self.inFreqweighting.currentIndex()] != self.setFreqweighting\
+        if self.inTemplate.currentIndex() == 1:
+            self.groupBox_SinalExcit.setEnabled(True)
+            self.inDurationMeasure.setEnabled(False)
+            self.inTimeweighting.setEnabled(False)
+            self.inTimeweighting.setItemText(self.inTimeweighting.currentIndex(), "Slow")
+            self.inFreqweighting.setEnabled(False)
+            self.inFreqweighting.setItemText(self.inFreqweighting.currentIndex(), "Z")
+        else:
+            self.groupBox_SinalExcit.setEnabled(False)
+            self.inDurationMeasure.setEnabled(True)
+            self.inFreqweighting.setEnabled(True)
+            self.inFreqweighting.setItemText(self.inFreqweighting.currentIndex(),
+                                             self.Freqweighting[self.inFreqweighting.currentIndex()])
+            self.inTimeweighting.setEnabled(True)
+            self.inTimeweighting.setItemText(self.inTimeweighting.currentIndex(),
+                                             self.Timeweightingstr[self.inTimeweighting.currentIndex()])
+       
+        if self.Template[self.inTemplate.currentIndex()] != self.setTemplate \
+        or self.Method[self.inMethod.currentIndex()] != self.setMethod\
+        or self.Freqweighting[self.inFreqweighting.currentIndex()] != self.setFreqweighting\
         or self.Timeweighting[self.inTimeweighting.currentIndex()] != self.setTimeweighting\
+        or self.Fraction[self.inFraction.currentIndex()] !=  self.setFraction\
+        or self.inFreqmin.value() != self.setFreqmin\
+        or self.inFreqmax.value() != self.setFreqmax\
+        or self.inStartmargin.value() != self.setStartmargin\
+        or self.inStopmargin.value() != self.setStopmargin\
+        or self.inDurationSignal.value() != self.setDurationsignal\
         or self.inDurationMeasure.time().minute() != self.minMed\
         or self.inDurationMeasure.time().second() != self.secMed\
+        or self.inAverage.value() != self.setAverage\
         or self.inFTC != self.setCorrecao:
             self.btnApply.setEnabled(True)
         else:
             self.btnApply.setEnabled(False)
         # QtCore.QTimer.singleShot(250, self.update) # QUICKLY repeat
-
-    def btnInfo_Action(self):
-        self.btnInfo.setIcon(QtGui.QIcon("icon/info_click.png"))
-        dlgAbout = about()
-        # dlgAbout.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-        # dlgAbout.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
-        dlgAbout.exec_()
-
-    def btnNewproject_Action(self):
-        self.btnNewproject.setIcon(QtGui.QIcon("icon/NewProject_click.png"))
-        dlgNewProject = newProject()
-        # dlgNewProject.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-        # dlgNewProject.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
-        dlgNewProject.exec_()
 
     def btnCalibre_Action(self):
         dlgCalibration = calib()
@@ -495,7 +810,7 @@ class setSetup(QtWidgets.QDialog, guiSetup):
             self.return_pyaudioStream()
         if dlgCalibration.accept:
             self.setCorrecao      = dlgCalibration.display.correcao
-            self.setSensibilidade = dlgCalibration.display.sensibilidade
+            self.setSensitivity = dlgCalibration.display.Sensitivity
             self.setCalibration   = dlgCalibration.display.FC
             self.lblFTC.setText(str(self.setCorrecao).replace(".",",") + " dB")
             self.inFTC            = self.setCorrecao
@@ -503,13 +818,27 @@ class setSetup(QtWidgets.QDialog, guiSetup):
 
     def btnApply_Action(self):
         self.qTimer.stop()
+        if self.Template[self.inTemplate.currentIndex()] == 'reverberationTime':
+            self.inFreqweighting.setCurrentIndex(2)
+            self.inTimeweighting.setCurrentIndex(2)
+        else:
+            self.inAverage.setProperty("value", 1)
         self.setDurationmeasure = self.inDurationMeasure.time().minute()*60 + self.inDurationMeasure.time().second()
         savemat('cacheSetup.mat',
-              {'durationMeasure': self.setDurationmeasure,
+             {'template':        self.Template[self.inTemplate.currentIndex()],
+              'method':          self.Method[self.inMethod.currentIndex()],
+              'average':         self.inAverage.value(),
+              'fraction':        self.Fraction[self.inFraction.currentIndex()],
+              'freqMin':         self.inFreqmin.value(),
+              'freqMax':         self.inFreqmax.value(),
+              'startMargin':     self.inStartmargin.value(),
+              'stopMargin':      self.inStopmargin.value(),
+              'durationSignal':  self.inDurationSignal.value(),
+              'durationMeasure': self.setDurationmeasure,
               'calibrationFC':   self.setCalibration,
               'inFreqweighting': self.Freqweighting[self.inFreqweighting.currentIndex()],
               'inTimeweighting': self.Timeweighting[self.inTimeweighting.currentIndex()],
-              'sensibilidade':   self.setSensibilidade,
+              'Sensitivity':   self.setSensitivity,
               'correcao':        self.setCorrecao,
               'calibRec':        self.setcalibRec})
         self.close()
@@ -526,9 +855,16 @@ class calib(QtWidgets.QDialog, guiCalib):
         super(calib, self).__init__(parent)
         self.setupUi(self)
         self.returnDisplay = False
+        self.setup         = False
         self.accept        = False
         self.duration      = 10
         self.countdown     = self.duration
+        self.graphicCalibration.plotItem.showGrid(False, True, 0.7)
+        self.graphicCalibration.plotItem.setLogMode(x=True, y=False)
+        self.graphicCalibration.setYRange(-40,120)
+        self.graphicCalibration.setXRange(1.3010299956639813,4.301029995663981, padding=0)
+        self.graphicCalibration.setLabel('left', "NPS dB")
+        self.graphicCalibration.setLabel('bottom', "Frequency Hz")
 
         '''Update nativo do Qt interval = 1s = 1000ms'''
         self.qTimer = QtCore.QTimer()
@@ -541,19 +877,33 @@ class calib(QtWidgets.QDialog, guiCalib):
         self.btnAccept.clicked.connect(self.btnAccept_Action)
         self.btnAccept.setEnabled(False)
         self.cacheSetup         = loadmat('cacheSetup.mat')
+        self.setMethod          = self.cacheSetup['method'][0]
+        self.setTemplate        = self.cacheSetup['template'][0]
+        self.setFreqmin         = self.cacheSetup['freqMin'][0][0]
+        self.setFreqmax         = self.cacheSetup['freqMax'][0][0]
+        self.setFraction        = self.cacheSetup['fraction'][0][0]
+        self.setStartmargin     = self.cacheSetup['startMargin'][0][0]
+        self.setStopmargin      = self.cacheSetup['stopMargin'][0][0]
+        self.setDurationsignal  = self.cacheSetup['durationSignal'][0][0]
         self.setDurationmeasure = self.cacheSetup['durationMeasure'][0][0]
         self.setCalibration     = self.cacheSetup['calibrationFC'][0][0]
         self.setFreqweighting   = self.cacheSetup['inFreqweighting'][0][0]
         self.setTimeweighting   = self.cacheSetup['inTimeweighting'][0][0]
-        self.setSensibilidade   = self.cacheSetup['sensibilidade'][0][0]
+        self.setAverage         = self.cacheSetup['average'][0][0]
+        self.setSensitivity   = self.cacheSetup['Sensitivity'][0][0]
         self.setCorrecao        = self.cacheSetup['correcao'][0][0]
         self.samplingRate       = default.samplingRate
-        self.display            = pyaudioStream(device         = default.device,
+        self.display            = pyaudioStream(device        = default.device,
                                                 samplingRate   = self.samplingRate,
                                                 duration       = self.duration,
                                                 inputChannels  = default.inputChannels,
-                                                timeConstant   = 0.2,
+                                                outputChannels = default.outChannels,
+                                                timeConstant   = 0.3,
+                                                fstart         = 20,
+                                                fstop          = 20000,
+                                                ffraction      = 1,
                                                 Freqweighting  = 'Z',
+                                                average        = 1,
                                                 template       = 'calibration')
         self.display.streamStart()
         
@@ -579,6 +929,11 @@ class calib(QtWidgets.QDialog, guiCalib):
             if self.display.key:
                 self.lblSens.setText(self._translate("Dialog", " "))
                 self.lblStrSens.setText(self._translate("Dialog", " "))
+                pen=pyqtgraph.mkPen(color='c')
+                if self.display.freqVector.size == self.display.Level.size:
+                    self.graphicCalibration.plot(self.display.freqVector, self.display.Level, pen=pen, clear=True)
+                else:
+                    pass
             else:
                 self.strSens = str(self.display.Sensitivity*1000).replace(".",",")
                 self.lblStrSens.setText(self._translate("Dialog", "Sensitivity"))
@@ -594,18 +949,36 @@ class calib(QtWidgets.QDialog, guiCalib):
 
     def btnAccept_Action(self):
         savemat('cacheSetup.mat',
-             {'durationMeasure': self.setDurationmeasure,
+             {'template':        self.setTemplate,
+              'method':          self.setMethod,
+              'fraction':        self.setFraction,
+              'freqMin':         self.setFreqmin,
+              'freqMax':         self.setFreqmax,
+              'startMargin':     self.setStartmargin,
+              'stopMargin':      self.setStopmargin,
+              'durationSignal':  self.setDurationsignal,
+              'durationMeasure': self.setDurationmeasure,
               'calibrationFC':   self.display.FC,
               'inFreqweighting': self.setFreqweighting,
               'inTimeweighting': self.setTimeweighting,
+              'average':         self.setAverage,
               'correcao':        self.display.correcao,
-              'sensibilidade':   self.display.Sensitivity,
+              'Sensitivity':     self.display.Sensitivity,
               'calibRec':        self.display.correctedData})
-        self.accept=True
-        self.close()
+
+        if self.setup:
+            self.accept=True
+            self.close()
+        else:
+            self.close()
+            self.returnDisplay=True
 
     def btnCancel_Action(self):
-        self.close()
+        if self.setup:
+            self.close()
+        else:
+            self.close()
+            self.returnDisplay=True
 
 
 
@@ -614,8 +987,11 @@ class about(QtWidgets.QDialog, guiAbout):
         super(about, self).__init__(parent)
         self.setupUi(self)
         self.btnOk.clicked.connect(self.btnOk_Action)
+        self.returnDisplay=False
+
 
     def btnOk_Action(self):
+        self.returnDisplay=True
         self.close()
 
 
@@ -645,6 +1021,7 @@ class newProject(QtWidgets.QDialog, guiProject):
         self.setupUi(self)
         os.chdir(path_project)
         self.allProjects = os.listdir(".")
+        self.returnDisplay=False
         self.btnCreate.setEnabled(False)
         self.minStr = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p",\
                         "a", "s", "d", "f", "g", "h", "j", "k", "l", "ç",\
@@ -722,12 +1099,15 @@ class newProject(QtWidgets.QDialog, guiProject):
             self.vk_m.setText(self.minStr[26])
             
     def btnCancel_Action(self):
+        self.returnDisplay=True
         self.qTimer.stop()
         os.chdir(path_main)
         self.close()
     def btnCreate_Action(self):
         # print(self.entryProjectname.toPlainText())
+        self.returnDisplay=True
         self.qTimer.stop()
+        # self.close()
         self.close()
         # cria uma pasta com o nome do projeto dentro da pasta projetos
         os.mkdir(self.entryProjectname.toPlainText())
@@ -778,7 +1158,7 @@ class newProject(QtWidgets.QDialog, guiProject):
     def vk_underscoreAction(self): self.entryProjectname.setText(self.entryProjectname.toPlainText() + '_')
     def delAllAction(self): self.entryProjectname.setText('')
 
-#%% if __name__=="__main__"
+# %% Mainloop
 if __name__=="__main__":
     app = QtWidgets.QApplication(sys.argv)
     startMNPS = MNPS()
