@@ -58,7 +58,7 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
 - Acoustics
 - XlsxWriter
 
-# Referências
+# Contato
 - Autor: Leonardo Jacomussi
   - [LinkedIn][LinkedIn_Leo]
   - [ResearchGate][ResearchGate_Leo]
@@ -67,6 +67,7 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
   - [LinkedIn][LinkedIn_Will]
   - [ResearchGate][ResearchGate_Will]
 
+# Referências
 (Citar artigo Internoise 2020, ResearchGate e Llinkedin.)
 
 
