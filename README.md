@@ -11,6 +11,7 @@ O projeto foi especialmente otimizado pala ser compilado em sistemas embarcados 
 ### Configurando
 Para usar os *software* basta baixar os arquivos, instalar as dependências e fazer os seguintes ajustes:
 - *default.py* --> Neste arquivo você deve encontrar o(s) dispositivo(s) de aúdio conectados ao sistema embarcado ou computador e configurá-lo na variável *device*. Do mesmo modo, deve colocar o número dos canais de entrada e saída nas variáveis *inputChannels* e *outChannels*. Por fim, configure corretamente a taxa de amostragem na variável *samplingRate*. Após terminar as configurações, salve o arquivo.
+
 - *startMNPS.py* -->Execute este arquivo para rodar o *software*.
 
 ## Os sistema embarcados testados foram:
