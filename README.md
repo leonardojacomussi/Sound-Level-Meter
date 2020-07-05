@@ -60,12 +60,12 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
 
 # Referências
 - Autor: Leonardo Jacomussi
-[LinkedIn][LinkedIn_Leo]
-[ResearchGate][ResearchGate_Leo]
+  - [LinkedIn][LinkedIn_Leo]
+  - [ResearchGate][ResearchGate_Leo]
 
 - Orientador: William D'Andrea Fonseca
-[LinkedIn][LinkedIn_Will]
-[ResearchGate][ResearchGate_Will]
+  - [LinkedIn][LinkedIn_Will]
+  - [ResearchGate][ResearchGate_Will]
 
 (Citar artigo Internoise 2020, ResearchGate e Llinkedin.)
 
