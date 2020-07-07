@@ -62,12 +62,8 @@ class MNPS(QtWidgets.QMainWindow, guiMNPS):
         
         #  Informações da stream
         self.samplingRate = default.samplingRate
-        if self.cacheSetup['template'][0] == 'frequencyAnalyser':
-            self.duration = self.cacheSetup['durationMeasure'][0][0]
-            self.template = 'Frequency Analysis'
-        else:
-            self.duration = self.cacheSetup['durationSignal'][0][0]
-            self.template = 'Reverberation Time'
+        self.duration = self.cacheSetup['durationMeasure'][0][0]
+        self.template = 'Frequency Analysis'
         self.display = pyaudioStream(device       = default.device,
                                     samplingRate  = self.samplingRate,
                                     duration      = self.duration,

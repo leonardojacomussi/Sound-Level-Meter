@@ -29,8 +29,9 @@ class pyaudioStream(object):
         -> template: conjunto de ferramentas específicas pré-programadas para
                     o tipo de medição que deseja realizar. Podem ser escolhidos
                     entre "frequencyAnalyser" (medição de NPS com filtros de
-                    bandas de oitava), "reverberationTime" (medição de tempo de
-                    reverberação) e "None", quando em modo stand-by.
+                    bandas de oitava), e futuramente "reverberationTime"
+                    (medição de tempo de reverberação) e "stand-by", quando em
+                    modo stand-by.
                     
         -> device: [in, out]
                    vetor de números inteiros correspondentes aos dispositivos
@@ -67,11 +68,7 @@ class pyaudioStream(object):
         -> Freqweighting: Ponderação na frequência. Podem ser escolhidas as curvas
                           de ponderação A, C e Z.
                    
-        -> duration: se o template for "frequencyAnalyser" é o tempo de registro
-                     da medição, se o template for "reverberationTime" é o tempo
-                     efetivo do sinal de excitação (considerando que há o tempo
-                     de silêncio no final e no início do sinal (startMargin e
-                     stopMargin)).
+        -> duration: tempo de registro da medição em segundos.
     """
     
     def __init__(self, device  =  default.device,
@@ -196,10 +193,6 @@ class pyaudioStream(object):
         '''
         if self.template == 'frequencyAnalyser':
             self.thread = threading.Thread(target=self.Record)
-            self.thread.start()
-            
-        elif self.template == 'reverberationTime':
-            self.thread = threading.Thread(target=self.PlayRecord)
             self.thread.start()
             
         elif self.template == 'calibration':
