@@ -7,13 +7,11 @@ author: @leonardojacomussi
 """
 
 from numpy import float32, int32, asarray, empty, transpose, frombuffer, log2,\
-                  loadtxt, angle, zeros, linspace, sqrt, log10, mean, fft,\
-                  concatenate, where, sin, cos
-from standards import ponderacaoA, ponderacaoC, ponderacaoZ, RT,\
+                  loadtxt, angle, linspace, sqrt, log10, mean, fft, where, sin, cos
+from standards import ponderacaoA, ponderacaoC, ponderacaoZ,\
                             impulse_level, fast_level, slow_level
 from pyfilterbank import FractionalOctaveFilterbank as FOF
-from pytta import SignalObj, generate
-from acoustics import  generator
+from pytta import SignalObj
 from scipy.io import loadmat
 from scipy import interpolate
 import threading
@@ -68,26 +66,14 @@ class pyaudioStream(object):
                       
         -> Freqweighting: Ponderação na frequência. Podem ser escolhidas as curvas
                           de ponderação A, C e Z.
-                          
-        -> method: tipo de sinal de excitação. Podem ser escolhidos entre sweep
-                   exponencial, ruído branco e ruído rosa.
                    
         -> duration: se o template for "frequencyAnalyser" é o tempo de registro
                      da medição, se o template for "reverberationTime" é o tempo
                      efetivo do sinal de excitação (considerando que há o tempo
                      de silêncio no final e no início do sinal (startMargin e
                      stopMargin)).
-                     
-        -> startMargin: tempo de silêncio no início do sinal de excitação. Neces-
-                        sário devido ao pico de energia no circuito elétrico dos
-                        alto-falantes ao abrir o canal do amplificador de potência.
-                        
-        -> stopMargin: tempo de silêncio no final do sinal de excitação. Necessá-
-                       rio para captar o decaimento da energia sonora na sala.
-                       
-        -> average: número de medições de tempo de reverberação a serem feitas
-                    para determinar a média, de acordo com a norma ISO 3382-1:2009.
     """
+    
     def __init__(self, device  =  default.device,
                  samplingRate  =  default.samplingRate,
                  inputChannels =  default.inputChannels,
@@ -98,11 +84,7 @@ class pyaudioStream(object):
                  ffraction     =  default.fraction,
                  Freqweighting =  default.Freqweighting,
                  duration      =  5.0,
-                 startMargin   =  2.0,
-                 stopMargin    =  6.0,
-                 template      =  'stand-by',
-                 method        =  str,
-                 average       = None):
+                 template      =  'stand-by'):
         self.device        = device
         self.samplingRate  = samplingRate
         self.inputChannels = inputChannels
@@ -116,16 +98,9 @@ class pyaudioStream(object):
         self.numSamples    = int(self.duration*self.samplingRate)
         self.fftDegree     = log2(self.numSamples)
         self.template      = template
-        self.timeSNR       = 5
-        self.startMargin   = startMargin + self.timeSNR
-        self.stopMargin    = stopMargin
-        self.method        = method
-        self.average       = average
         self.pause         = False
         self.stop          = False
         self.rec           = False
-        if self.average != None:
-            self.average = self.average - 1
         if len(self.device) > 1:
             self.inDevice  = self.device[0]
             self.outDevice = self.device[1]
@@ -183,62 +158,8 @@ class pyaudioStream(object):
         self.inData=None
         self.Level=None
         self.key=True # False para finalizar o fluxo
-        if self.template == 'reverberationTime':
-            self.rec = True
-            if self.method == 'sweepExponencial':
-                self.vec_startMargin = zeros(int(self.startMargin*self.samplingRate),\
-                                                dtype=float32)
-                self.vec_stopMargin = zeros(int(self.stopMargin*self.samplingRate),\
-                                                dtype=float32)
-                self.excitation = generate.sweep(freqMin  = self.fstart,\
-                                             freqMax      = self.fstop,\
-                                             samplingRate = self.samplingRate,\
-                                             fftDegree    = self.fftDegree,\
-                                             startMargin  = 0,\
-                                             stopMargin   = 0,\
-                                             method       = 'logarithmic',\
-                                             windowing    = 'hann')
-                self.excitation = concatenate((self.vec_startMargin,\
-                                               self.excitation.timeSignal,\
-                                                 self.vec_stopMargin), axis=None)
-                del self.vec_startMargin, self.vec_stopMargin
-                
-            if self.method == 'pinkNoise':
-                self.vec_startMargin = zeros(int(self.startMargin*self.samplingRate),
-                                                dtype=float32)
-                self.vec_stopMargin = zeros(int(self.stopMargin*self.samplingRate),
-                                                dtype=float32)
-                self.excitation = generator.noise(int(self.duration*self.samplingRate),
-                                                     color='pink',state=None)
-                self.excitation = concatenate((self.vec_startMargin, self.excitation,\
-                                                 self.vec_stopMargin), axis=None)
-                self.excitation /= 10
-                del self.vec_startMargin, self.vec_stopMargin
-                
-            if self.method == 'whiteNoise':
-                self.vec_startMargin = zeros(int(self.startMargin*self.samplingRate),
-                                                dtype=float32)
-                self.vec_stopMargin = zeros(int(self.stopMargin*self.samplingRate),
-                                                dtype=float32)
-                self.excitation = generator.noise(int(self.duration*self.samplingRate),
-                                                     color='white',state=None)
-                self.excitation = concatenate((self.vec_startMargin, self.excitation,\
-                                                 self.vec_stopMargin), axis=None)
-                del self.vec_startMargin, self.vec_stopMargin
-            #
-            self.stream=self.p.open(format              = pyaudio.paFloat32,
-                                    channels            = 1,
-                                    input_device_index  = self.inDevice,
-                                    output_device_index = self.outDevice,
-                                    rate                = self.samplingRate, 
-                                    input               = True,
-                                    output              = True,
-                                    frames_per_buffer  = self.frames)
-            self.excitation = self.excitation/self.excitation.max()
-            self.recData = empty((int(len(self.inputChannels)*(self.average+1)),\
-                                  self.excitation.size), dtype=float32)
-            self.countPlay = 0
-        elif self.template == 'frequencyAnalyser':
+        
+        if self.template == 'frequencyAnalyser':
             self.recData = empty((len(self.inputChannels), self.numSamples),\
                                  dtype=float32)
             self.rec = True
@@ -357,51 +278,6 @@ class pyaudioStream(object):
         else:
             self.close()
             
-    def PlayRecord(self):
-        '''
-        Stream definida para letura e reprodução de áudio, e cálculo do nível 
-        de pressão sonora em bandas e nível global, registrando o sinal medido.
-        '''
-        try:
-            if self.pause:
-                pass
-            else:
-                self.stream.write(self.excitation[self.framesRead : self.frames +\
-                                   self.framesRead], num_frames = self.frames)
-                # Coleta dados da stream Pyaudio
-                self.inData = frombuffer(self.stream.read(self.frames,\
-                                  exception_on_overflow=False), dtype=float32)
-                # Aplica fator de calibração
-                self.inData = self.inData * self.FCalibration
-                # Salvo concateno os blocos de sinais adquiridos em um vetor
-                self.recData[self.countPlay, self.framesRead : self.frames +\
-                             self.framesRead] = self.inData[:]
-                # Cálcula níveis globais e por bandas
-                self.globalLevel, self.Level = getBandLevel(data =self.inData,\
-                                            pyfilterbank = self.pyfilterbank,\
-                                            fc           = self.freqs,\
-                                            pondFreq     = self.Freqweighting)
-                # Teste
-                # print('NPS: ', self.Level, '\n\nX: ', self.eixoX, '\n\n')
-                # print('med nº ', self.countPlay+1)
-                
-                # Condicional de parada
-                self.framesRead+=self.frames
-                self.countDn = self.recData.size/(self.average+1) - self.framesRead
-                if self.framesRead >= self.excitation.size or self.countDn < self.frames or self.stop == True:
-                    self.framesRead=0
-                    self.countPlay+=1
-                    if self.countPlay>self.average:
-                        raise self.correctionSpectral()
-                    
-        except Exception as E:
-            self.key=False
-            print('\n\nDEEEEEU RUIM:\n')
-            print(E)
-        if self.key:
-            self.update()
-        else:
-            self.close()
             
     def Calibration(self):
         '''
@@ -443,8 +319,7 @@ class pyaudioStream(object):
         a influência da Sensitivity do microfone Dayton Audio iMM-6 e resposta
         em frequência do conversor analógico-digital C-Media CM6206.
         '''
-        if (self.average+1) > 1: cutData = mean(self.recData[:, self.samplingRate:-1], axis=0)
-        else:                    cutData = self.recData[:, self.samplingRate:-1]
+        cutData = self.recData[:, self.samplingRate:-1]
         recData    = SignalObj(signalArray  = cutData,
                                domain       = 'time',
                                samplingRate = self.samplingRate)
@@ -501,70 +376,8 @@ class pyaudioStream(object):
             pond = 10*log10(sum(10**(pond/10)))
         else: 
             pond = 0
-        print(pond)
-        if self.template == 'reverberationTime':
-            # SNR
-            cutSNR       = self.timeSNR*self.samplingRate
-            floorNoise   = self.correctedData[0, 0:cutSNR]
-            measuredData = self.correctedData[0, (cutSNR+1):-1]
-            excitation   = self.excitation[cutSNR+self.samplingRate+1:-1] 
-            trash, self.Level_floorNoise =  getBandLevel(data = floorNoise,
-                                                pyfilterbank = self.pyfilterbank,
-                                                fc           = self.freqs, 
-                                                pondFreq     = 'Z')
-            trash, self.Level_measuredData = getBandLevel(data = measuredData,\
-                                                pyfilterbank = self.pyfilterbank,\
-                                                fc           = self.freqs,\
-                                                pondFreq     = 'Z')
-            self.SNR = self.Level_measuredData - self.Level_floorNoise
-            print(self.SNR)
-            if self.method == 'sweepExponencial':
-                self.correctedData = measuredData
-                self.excitation = excitation
-                complete = self.excitation.size - self.correctedData.size
-                if complete > 0:
-                    complete = zeros((1, complete), dtype=float32)
-                    print(complete)
-                    self.correctedData = concatenate((self.correctedData, complete),\
-                                                     axis=None)
-                inputSignal  = SignalObj(signalArray  = transpose(self.excitation),
-                                         domain       ='time',
-                                         samplingRate = self.samplingRate)
-                outputSignal = SignalObj(signalArray  = transpose(self.correctedData),
-                                         domain       ='time',
-                                         samplingRate = self.samplingRate)
-                self.IR = outputSignal/inputSignal
-                # pMax = where(abs(self.IR.timeSignal)**2 == abs(self.IR.timeSignal).max()**2)[0][0]
-                pMax=0
-                self.IR = SignalObj(signalArray  = self.IR.timeSignal[pMax:-1],\
-                                    domain       = 'time',\
-                                    samplingRate = self.samplingRate)
-            if self.method == 'pinkNoise' or self.method == 'whiteNoise':
-                pCut = int((self.startMargin + self.duration + 0.2) * self.samplingRate)
-                self.correctedData = self.correctedData[0, pCut:-1]
-                pMax = where(abs(self.correctedData)**2 == abs(self.correctedData).max()**2)[0][0]
-                self.IR = self.correctedData[pMax:-1]
-                self.IR = SignalObj(signalArray  = self.IR,\
-                                    domain       = 'time',\
-                                    samplingRate = self.samplingRate)
-            self.RT = RT(signal       = self.IR, snr = self.SNR,\
-                         samplingRate = self.samplingRate,\
-                         fstart       = self.fstart,\
-                         fstop        = self.fstop,\
-                         ffraction    = self.ffraction)
-            # print(self.RT['T10'])
-            self.impulseLevel = impulse_level(data = self.correctedData,\
-                                              fs   = self.samplingRate)
-            self.impulseLevel[1][:] += pond
-            self.fastLevel = fast_level(data = self.correctedData,\
-                                        fs   = self.samplingRate)
-            self.fastLevel[1][:] += pond
-            self.slowLevel = slow_level(data = self.correctedData,\
-                                        fs   = self.samplingRate)
-            self.slowLevel[1][:] += pond
-            self.ResultKey = True
             
-        elif self.template == 'frequencyAnalyser':
+        if self.template == 'frequencyAnalyser':
             globalLevel, self.Level =\
                             getBandLevel(data = self.correctedData[0],\
                                 pyfilterbank  = self.pyfilterbank,\
@@ -587,6 +400,7 @@ class pyaudioStream(object):
             self.slowLevelGlobal = 10*log10(mean(10**(self.slowLevel[1][:]/10)))
             self.ResultKey = True
             # print('Result: '+ self.template)
+            
         elif self.template == 'calibration':
             self.freqSignal, self.freqVector = getSpectrum(self.correctedData[0,:],\
                                                     samplingRate=self.samplingRate)
@@ -774,9 +588,5 @@ if __name__=="__main__":
                     ffraction     = 3,
                     Freqweighting = 'A',
                     duration      = 5,
-                    startMargin   = 0,
-                    stopMargin    = 1,
-                    method        = 'sweepExponencial',
-                    average       = 1,
                     template      = 'frequencyAnalyser')
     test.streamStart()

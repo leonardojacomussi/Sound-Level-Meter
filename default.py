@@ -40,9 +40,6 @@ fraction = 3
 # Margem de silêncio no início do sinal: [s]
 startMargin = 0.2
 
-# Margem de silêncio no final do sinal: [s]
-stopMargin = 5
-
 # Pressão sonora de referência (zero dB): [Pa]
 refPressure = 2e-05
 
@@ -54,15 +51,6 @@ duration = 60
 
 # Velocidade do som [m/s]
 c0 = 343
-
-# Método de medição de respostas impulsivas
-method = 'sweepExponencial'
-
-# Margem de silêncio no início do sinal de excitação [s]
-startMargin = 0.2
-
-# Margem de silêncio no final do sinal de excitação [s]
-stopMargin = 1.5
 
 # Ponderação em frequência
 Freqweighting = 'Z'
