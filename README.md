@@ -41,7 +41,7 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
 
 
 # Versões
-- Branch: **Master** --> versão completa do *software* contendo níveis de pressão sonora em banda larga em tempo real e método de cálculo do tempo de reverberação.
+- Branch: **Master** --> versão completa do *software* contendo níveis de pressão sonora em banda larga em tempo real e futuramente método de cálculo do tempo de reverberação.
 
 - Branch: **Simple-version** --> versão simples do *software* contendo apenas níveis de pressão sonora em tempo real, no entando, ao optar em salvar a medição, é feito a filtragem do sinal medido em bandas de 1/3 de oitava.
 
