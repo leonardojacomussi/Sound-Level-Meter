@@ -1,7 +1,7 @@
 # Sound-Level-Meter: Sonômetro programado em Python para sistemas embarcados (SBC - Single Board Computer)
 Este projeto é fruto do trabalho de conclusão de curso que desenvolvi durante a graduação do curso de [Engenharia Acústica][EAC], pela Universidade Federal de Santa Maria ([UFSM][ufsmsite]). 
 
-Neste repositório contém os *software* implementados em Python 3 com as ferramentas típicas de um sonômetro (ou Medidor de Nível de Pressão Sonora - MNPS), desde a análise do NPS em banda larga a medição de resposta impulsiva para o cálculo do tempo de reverberação de uma sala, contendo além do processamento digital de sinais de áudio (*back-end*), um completo conjunto de interfaces gráficas que facilitam a configuração e acesso aos dados medidos.
+Neste repositório contém os *software* implementados em Python 3 com as ferramentas típicas de um sonômetro (ou Medidor de Nível de Pressão Sonora - MNPS), desde a análise do NPS global a NPS em banda larga (em versão futura, contemplará medições de respostas impulsivas para o cálculo do tempo de reverberação de salas), contendo além do processamento digital de sinais de áudio (*back-end*), um completo conjunto de interfaces gráficas que facilitam a configuração e acesso aos dados medidos.
 
 Além do *software*, o projeto conta com um conjunto de *hardware* que contempla toda a cadeia de sinais de um MNPS, como microfone de eletreto, conversor analógico-digital (placa de áudio), unidade de processamento (sistema embarcado) e visor (*display touch screen*).
 
@@ -11,6 +11,7 @@ O projeto foi especialmente otimizado pala ser compilado em sistemas embarcados 
 ### Configurando
 Para usar os *software* basta baixar os arquivos, instalar as dependências e fazer os seguintes ajustes:
 - *default.py* --> Neste arquivo você deve encontrar o(s) dispositivo(s) de aúdio conectados ao sistema embarcado ou computador e configurá-lo na variável *device*. Do mesmo modo, deve colocar o número dos canais de entrada e saída nas variáveis *inputChannels* e *outChannels*. Por fim, configure corretamente a taxa de amostragem na variável *samplingRate*. Após terminar as configurações, salve o arquivo.
+
 - *startMNPS.py* -->Execute este arquivo para rodar o *software*.
 
 ## Os sistema embarcados testados foram:
@@ -39,6 +40,12 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
 |     Cabos USB                   |     USB-A para USB-A e USB-A para micro USB    |              x         |          x      |          x         |
 
 
+# Versões
+- Branch: **Master** --> versão completa do *software* contendo níveis de pressão sonora em banda larga em tempo real e método de cálculo do tempo de reverberação.
+
+- Branch: **Simple-version** --> versão simples do *software* contendo apenas níveis de pressão sonora em tempo real, no entando, ao optar em salvar a medição, é feito a filtragem do sinal medido em bandas de 1/3 de oitava.
+
+
 # Dependências
 - Python 3.7
 - PyQt5
@@ -51,8 +58,17 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
 - Acoustics
 - XlsxWriter
 
+# Contato
+- Autor: Leonardo Jacomussi
+  - [LinkedIn][LinkedIn_Leo]
+  - [ResearchGate][ResearchGate_Leo]
+
+- Orientador: William D'Andrea Fonseca
+  - [LinkedIn][LinkedIn_Will]
+  - [ResearchGate][ResearchGate_Will]
+
 # Referências
-Citar artigo Internoise 2020, ResearchGate e Llinkedin.
+(Citar artigo Internoise 2020.)
 
 
 [EAC]: <https://www.eac.ufsm.br/>
@@ -62,3 +78,7 @@ Citar artigo Internoise 2020, ResearchGate e Llinkedin.
 [Rpi4]: <https://www.raspberrypi.org/products/raspberry-pi-4-model-b/>
 [Rpi3]: <https://www.raspberrypi.org/products/raspberry-pi-3-model-b-plus/>
 [Raspbian]: <https://www.raspberrypi.org/downloads/raspberry-pi-os/>
+[LinkedIn_Leo]: <https://www.linkedin.com/in/leonardo-jacomussi-6549671a2>
+[ResearchGate_Leo]: <https://www.researchgate.net/profile/Leonardo_Jacomussi_Pereira_De_Araujo>
+[LinkedIn_Will]: <https://www.linkedin.com/in/william-fonseca>
+[ResearchGate_Will]: <https://www.researchgate.net/profile/William_Fonseca3>
