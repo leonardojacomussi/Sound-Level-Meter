@@ -68,7 +68,7 @@ De modo geral, os protótipos são constituídos dos componentes de *hardware* c
   - [ResearchGate][ResearchGate_Will]
 
 # Referências
-(Citar artigo Internoise 2020.)
+https://www.researchgate.net/publication/344435460_Raspberry_Pi_A_Low-cost_Embedded_System_for_Sound_Pressure_Level_Measurement
 
 
 [EAC]: <https://www.eac.ufsm.br/>
