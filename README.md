@@ -164,6 +164,11 @@ Installation:
     $ pip install PyQt-sip
     $ pip install pyqt5
 
+### pyslm
+Installation:
+
+    $ pip install git+https://github.com/leonardojacomussi/PySLM@main
+
 # Contact
 - Author: Leonardo Jacomussi
   - [LinkedIn][LinkedIn_Leo]
@@ -174,8 +179,12 @@ Installation:
   - [ResearchGate][ResearchGate_Will]
 
 # See more
+[PySLM - Pythonic Sound Level Meter][pyslm]
+
 [*Raspberry Pi: A Low-cost Embedded System for Sound Pressure Level Measurement*][ArtigoInternoise]
+
 [*Tutorial: configuração de dispositivos de áudio no Raspberry Pi – Parte 1*][Artigo_acustica1]
+
 [*Tutorial: configuração de dispositivos de áudio no Raspberry Pi – Parte 2*][Artigo_acustica2]
 
 
