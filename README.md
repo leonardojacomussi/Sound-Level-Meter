@@ -1,7 +1,7 @@
 # A Sound Level Meter programmed in Python for Single Board Computer (SBC)
 This project is the result of the course completion work that I developed during the undergraduate course in [Acoustical Engineering][EAC] at the Federal University of Santa Maria ([UFSM][ufsmsite]). 
 
-In this repository some information about the sound level meter prototypes developed and presented in the conference paper [* Raspberry Pi: A Low-cost Embedded System for Sound Pressure Level Measurement *] [ArticleInternoise]. The hardware sets for each prototype and a tutorial on how to install the software dependencies are briefly presented.
+In this repository some information about the sound level meter prototypes developed and presented in the conference paper [*Raspberry Pi: A Low-cost Embedded System for Sound Pressure Level Measurement*][ArtigoInternoise]. The hardware sets for each prototype and a tutorial on how to install the software dependencies are briefly presented.
 
 In addition to the software, the project has a set of hardware that includes the entire signal chain of an SLM, such as an electret microphone, analog-digital converter (sound card), processing unit (embedded system) and display (touch display) screen).
 
