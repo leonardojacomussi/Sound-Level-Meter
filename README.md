@@ -68,7 +68,7 @@ Installation:
     $ sudo wget https://www.python.org/ftp/python/3.8.6/Python-3.8.6.tgz
     $ sudo tar xzf Python-3.8.6.tgz
     $ cd Python-3.8.6
-    $ sudo ./configure –enable-optimizations
+    $ sudo ./configure --enable-optimizations
     $ sudo make altinstall
   
 ### libatlas-base-dev
