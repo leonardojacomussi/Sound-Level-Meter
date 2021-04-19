@@ -47,7 +47,7 @@ The software dependencies will be installed within a virtual environment, facili
     
 2 - Create a virtual environment with the following command, where '/usr/local/bin/python3.8' is the directory of the Python 3.8 compiler and slm is the name of the virtual environment folder, both of which can be changed in the highlighted arguments according to the Python installation location or name of the project you want to start:
 
-    $ virtualenv slm –python=’/usr/local/bin/python3.8’
+    $ virtualenv slm --python='/usr/local/bin/python3.8'
     
 3 - To open the created environment, execute the following command::
 
